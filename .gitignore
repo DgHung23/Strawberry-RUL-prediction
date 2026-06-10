@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Outputs and model artifacts
+output/
+models/
+!output/
+!models/
+!output/.gitkeep
+!models/.gitkeep
+*.h5
+*.keras
+*.pkl
+*.joblib
+*.onnx
+*.pt
+*.pth
+
+# Keep only the top-level data folder structure in Git.
+data/**
+!data/
+!data/01_raw/
+!data/02_processed/
+!data/03_split/
+!data/01_raw/.gitkeep
+!data/02_processed/.gitkeep
+!data/03_split/.gitkeep
