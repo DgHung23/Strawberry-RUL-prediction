@@ -3,7 +3,7 @@ import re
 import shutil
 
 INPUT_DIR = r"C:\Users\THANH CONG\Documents\Strawberry-RUL-prediction\data\02_processed\segmented_18-03-2026"
-OUTPUT_DIR = r"C:\Users\THANH CONG\Documents\assigned_18-03-2026_abcxyz"
+OUTPUT_DIR = r"C:\Users\THANH CONG\Documents\assigned_18-03-2026"
 
 
 def main():
