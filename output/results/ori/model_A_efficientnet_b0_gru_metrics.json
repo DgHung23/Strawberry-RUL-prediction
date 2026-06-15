@@ -1,0 +1,38 @@
+{
+  "model_id": "model_A",
+  "cnn_backbone": "efficientnet_b0",
+  "temporal_model": "gru",
+  "sequence_length": 8,
+  "stride": 1,
+  "split": {
+    "train": 1414,
+    "validation": 303,
+    "test": 304
+  },
+  "best_epoch": 3,
+  "training_seconds": 3.816151600010926,
+  "inference_seconds": {
+    "train": 0.08753059999435209,
+    "validation": 0.0196804000006523,
+    "test": 0.020776999997906387,
+    "test_per_sequence": 6.834539472995522e-05
+  },
+  "train": {
+    "mae": 2.3260395526885986,
+    "rmse": 3.338278027547883,
+    "mape": 6983951.5,
+    "r2": 0.9909958243370056
+  },
+  "validation": {
+    "mae": 0.28326064348220825,
+    "rmse": 0.35531050964173766,
+    "mape": 16186992.0,
+    "r2": -9.76777695964411e+24
+  },
+  "test": {
+    "mae": 1.1671459674835205,
+    "rmse": 2.001407962166677,
+    "mape": 66696820.0,
+    "r2": 0.0
+  }
+}
