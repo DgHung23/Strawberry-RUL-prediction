@@ -17,12 +17,14 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.preprocessing import StandardScaler
 
 
+
 def find_project_root(start=None):
     start = Path(start or Path.cwd()).resolve()
     for path in [start, *start.parents]:
-        if (path / 'README.md').exists() and (path / 'data').exists():
+        if (path / 'C:\\fluttersrc\\Strawberry-RUL-prediction\\README.md').exists() and (path / 'C:\\fluttersrc\\Strawberry-RUL-prediction\\data').exists():
             return path
     raise FileNotFoundError('Could not find project root containing README.md and data/.')
+    
 
 
 def seed_everything(seed=42):
