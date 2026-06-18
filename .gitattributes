@@ -1,0 +1,8 @@
+# Bảo GitHub bỏ qua hoàn toàn các ngôn ngữ này trong phần thống kê
+*.cpp vendored
+*.h vendored
+*.hpp vendored
+CMakeLists.txt vendored
+*.cmake vendored
+*.dart vendored
+*.swift vendored
