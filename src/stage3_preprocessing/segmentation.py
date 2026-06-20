@@ -5,12 +5,15 @@ import os
 import re
 
 import numpy as np
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 # Default input folder containing cropped raw images and output folder for segmented strawberries.
 # You can still edit these defaults, or pass --input-dir / --output-dir from the command line.
-input_dir = r'C:\Users\THANH CONG\Documents\Strawberry-RUL-prediction\data\01_raw\18-03-2026\cropped'
-output_dir = 'segmented_18-03-2026'
+input_dir = PROJECT_ROOT / "data" / "02_processed" / "cropped_18-03-2026"
+output_dir = PROJECT_ROOT / "data" / "02_processed" / "segmented_18-03-2026"
 
 # Define wider color ranges for strawberry candidates in HSV color space.
 # Old/damaged strawberries can shift from bright red to orange/brown with lower brightness.
@@ -151,6 +154,18 @@ def apply_mask_to_roi(roi, mask_res):
     return cv2.merge([b_channel, g_channel, r_channel, alpha_channel])
 
 
+def build_mask_output_dir(args):
+    input_folder_name = os.path.basename(os.path.normpath(args.input_dir))
+    output_folder_name = os.path.basename(os.path.normpath(args.output_dir))
+
+    date_match = re.search(r'(\d{2}-\d{2}-\d{4})', input_folder_name)
+    if date_match is None:
+        date_match = re.search(r'(\d{2}-\d{2}-\d{4})', output_folder_name)
+
+    mask_folder_name = f'mask_{date_match.group(1)}' if date_match else 'mask'
+    return os.path.join(os.path.dirname(args.output_dir), mask_folder_name)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Segment strawberries from a selected frame range.')
     parser.add_argument('--input-dir', default=input_dir, help='Folder containing cropped input images.')
@@ -168,6 +183,8 @@ def parse_args():
 def main():
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
+    mask_output_dir = build_mask_output_dir(args)
+    os.makedirs(mask_output_dir, exist_ok=True)
 
     image_paths = sorted(glob.glob(os.path.join(args.input_dir, '*.jpg')), key=natural_sort_key)
     image_paths = [path for path in image_paths if should_process_image(path, args)]
@@ -187,6 +204,8 @@ def main():
         if not args.keep_existing:
             for old_output_path in glob.glob(os.path.join(args.output_dir, f'{base_name}_strawberry_*.png')):
                 os.remove(old_output_path)
+            for old_mask_path in glob.glob(os.path.join(mask_output_dir, f'{base_name}_strawberry_*_mask.png')):
+                os.remove(old_mask_path)
 
         img = cv2.imread(img_path)
         if img is None:
@@ -203,9 +222,32 @@ def main():
         contours = [cnt for cnt in contours if is_valid_strawberry_contour(cnt, h, w)]
         contours = sorted(contours, key=lambda cnt: (cv2.boundingRect(cnt)[1], cv2.boundingRect(cnt)[0]))
 
-        strawberry_idx = 1
-
+        
         for cnt in contours:
+            # 1. Tính toán tọa độ tâm (Centroid) của quả dâu
+            M = cv2.moments(cnt)
+            if M["m00"] == 0:
+                continue
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+
+            # 2. Định vị Dòng (row) và Cột (col) dựa trên lưới vùng ảnh
+            if cY < (h / 2):
+                row = 0
+            else:
+                row = 1
+
+            if cX < (w / 3):
+                col = 0
+            elif cX < (2 * w / 3):
+                col = 1
+            else:
+                col = 2
+
+            # 3. Tính toán ID cố định từ 1 đến 6 dựa trên vị trí vùng
+            strawberry_idx = (row * 3) + col + 1
+
+            # 4. Cắt ROI và thực hiện xử lý ảnh nền như cũ
             x, y, w_box, h_box = cv2.boundingRect(cnt)
 
             pad = 20
@@ -234,7 +276,13 @@ def main():
             output_path = os.path.join(args.output_dir, output_filename)
             cv2.imwrite(output_path, strawberry_transparent)
 
-            strawberry_idx += 1
+            full_size_mask = np.zeros((h, w), dtype=np.uint8)
+            full_size_mask[y_start:y_end, x_start:x_end] = mask_res * 255
+
+            mask_filename = f'{base_name}_strawberry_{strawberry_idx}_mask.png'
+            mask_path = os.path.join(mask_output_dir, mask_filename)
+            cv2.imwrite(mask_path, full_size_mask)
+        # =====================================================
 
         print(f'-> Done {base_name}: segmented {strawberry_idx - 1} strawberries <-\n')
 

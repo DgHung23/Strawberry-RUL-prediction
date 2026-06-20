@@ -1,12 +1,14 @@
 import cv2
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-INPUT_DIR = Path(r"C:\Users\THANH CONG\Documents\Strawberry-RUL-prediction\data\01_raw\18-03-2026")
-OUTPUT_DIR = INPUT_DIR / "cropped" # folder name
+
+INPUT_DIR = PROJECT_ROOT / "data" / "01_raw" / "21-03-2026"
+OUTPUT_DIR = PROJECT_ROOT / "data" / "02_processed" / "cropped_21-03-2026" # folder name
 
 # the target you wanna crop image
-TARGET_WIDTH = 1150
+TARGET_WIDTH = 1116
 TARGET_HEIGHT = 930
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 

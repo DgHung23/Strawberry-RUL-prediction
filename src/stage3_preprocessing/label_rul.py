@@ -1,151 +1,169 @@
-import os
-import re
+from pathlib import Path
 import pandas as pd
-from datetime import datetime
 
-# read dataset
-DATASET_ROOT = r"C:\Users\THANH CONG\Documents\Strawberry-RUL-prediction\data\02_processed"
 
-# EOL of strawberry
-EOL_TIME = datetime(
-    2026, 3, 26,
-    8, 0, 0
+def generate_labels(
+    manifest_csv: Path,
+    eol_csv: Path,
+    output_csv: Path
+):
+    """
+    Generate labels.csv for Strawberry RUL prediction.
+    """
+
+    print("Loading frame manifest...")
+    manifest_df = pd.read_csv(manifest_csv)
+
+    print("Loading EOL anchors...")
+    eol_df = pd.read_csv(eol_csv)
+
+    
+    # Convert datetime
+    manifest_df["timestamp"] = pd.to_datetime(
+        manifest_df["timestamp"]
+    )
+
+    eol_df["eol_timestamp"] = pd.to_datetime(
+        eol_df["eol_timestamp"]
+    )
+
+    
+    # Merge EOL information
+    labels_df = manifest_df.merge(
+    eol_df[
+        [
+            "fruit_id",
+            "eol_timestamp",
+            "eol_basis"
+        ]
+    ],
+    on="fruit_id",
+    how="left"
 )
 
+    
+    # Check missing EOL
+    missing_eol = labels_df[
+        labels_df["eol_timestamp"].isna()
+    ]["fruit_id"].unique()
+
+    if len(missing_eol) > 0:
+        raise ValueError(
+            f"Missing EOL information for fruits: {missing_eol}"
+        )
+
+    
+    # Calculate RUL (hours)
+    # formular: rul = eol - current time
+    labels_df["rul_hours"] = (
+        labels_df["eol_timestamp"]
+        - labels_df["timestamp"]
+    ).dt.total_seconds() / 3600
+
+    # Clip negative values
+    labels_df["rul_hours"] = (
+        labels_df["rul_hours"]
+        .clip(lower=0)
+        .round(2)
+    )
+
+    
+    # Columns required by specification
+    labels_df["roi_id"] = labels_df["fruit_id"]
+
+    labels_df["raw_path"] = ""
+
+    labels_df["firmness_avg"] = pd.NA
+
+    labels_df["firmness_available"] = False
+
+    labels_df["valid_frame"] = labels_df["mask_valid"]
+
+    labels_df["exclude_reason"] = ""
+
+    labels_df["label_status"] = "approved"
+
+    
+    # Output columns
+    output_columns = [
+        "experiment_id",
+        "fruit_type",
+        "fruit_id",
+        "roi_id",
+        "image_path",
+        "raw_path",
+        "timestamp",
+        "eol_timestamp",
+        "rul_hours",
+        "temperature_c",
+        "humidity_pct",
+        "firmness_avg",
+        "firmness_available",
+        "valid_frame",
+        "exclude_reason",
+        "eol_basis",
+        "label_status"
+    ]
+
+    labels_df = labels_df[output_columns]
+
+    
+    # Sort by fruit and time
+    labels_df = labels_df.sort_values(
+        by=["fruit_id", "timestamp"]
+    )
+
+    
+    # Save
+    output_csv.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    labels_df.to_csv(
+        output_csv,
+        index=False
+    )
+
+    print("\n" + "=" * 60)
+    print("Labels generated successfully!")
+    print(f"Rows: {len(labels_df)}")
+    print(f"Output: {output_csv}")
+    print("=" * 60)
+
+
 def main():
-    # create label rul
-    rows = []
 
-    for day_folder in os.listdir(DATASET_ROOT):
+    PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-        day_path = os.path.join(
-            DATASET_ROOT,
-            day_folder
-        )
-
-        if not os.path.isdir(day_path):
-            continue
-
-        if not day_folder.startswith("assigned_"):
-            continue
-
-        # assigned_18-03-2026 -> 18-03-2026
-        date_str = day_folder.replace(
-            "assigned_",
-            ""
-        )
-
-        try:
-            # get the date from the folder name
-            current_date = datetime.strptime(
-                date_str,
-                "%d-%m-%Y"
-            )
-        except:
-            continue
-
-        print(f"Processing {day_folder}")
-
-        # strawberry folders
-        for straw_folder in os.listdir(day_path):
-
-            straw_path = os.path.join(
-                day_path,
-                straw_folder
-            )
-
-            if not os.path.isdir(straw_path):
-                continue
-
-            # strawberry_1 -> 1 (1 is id of strawberry)
-            try:
-                strawberry_id = int(
-                    straw_folder.split("_")[1]
-                )
-            except:
-                continue
-
-    
-            # image files
-            for filename in sorted(os.listdir(straw_path)):
-
-                if not filename.lower().endswith(".png"):
-                    continue
-            
-                # take the time from the file name
-                # example: frame-1_12-26-28_strawberry_1.png
-                match = re.search(
-                    r"frame-\d+_(\d+)-(\d+)-(\d+)_strawberry_(\d+)",
-                    filename
-                )
-
-                if not match:
-                    print("Skip: ", filename)
-                    continue
-
-                hour = int(match.group(1))
-                minute = int(match.group(2))
-                second = int(match.group(3))
-
-                # combine folder date and file time to create the image timestamp
-                current_timestamp = datetime(
-                    current_date.year,
-                    current_date.month,
-                    current_date.day,
-                    hour,
-                    minute,
-                    second
-                )
-
-                #the rul formula "remaining hours = EOL time - current time"
-                # return in seconds by total_seconds()
-                rul_hours = (
-                    EOL_TIME - current_timestamp
-                ).total_seconds() / 3600 # 3600 is the number of seconds in an hour
-                                     # divide by 3600 to convert to hours
-
-                image_path = os.path.join(
-                    day_folder,
-                    straw_folder,
-                    filename
-                ).replace("\\", "/")
-
-                rows.append({
-                    "image_path": image_path,
-                    "date": date_str,
-                    "strawberry_id": strawberry_id,
-                    "timestamp": current_timestamp.strftime(
-                        "%Y-%m-%d %H:%M:%S"
-                    ),
-                    "rul_hours": round(
-                        rul_hours,
-                        2
-                    )
-                })
-
-
-    # save csv file
-    df = pd.DataFrame(rows)
-
-    # sort in csv file by strawberry id and timestamp
-    df = df.sort_values(
-        by=[
-            "strawberry_id",
-            "timestamp"
-        ]
+    MANIFEST_DIR = (
+        PROJECT_ROOT
+        / "data"
+        / "02_processed"
+        / "manifests"
     )
 
-    output_csv = os.path.join(
-        DATASET_ROOT,
-        "labels.csv" #csv file name
+    frame_manifest = (
+        MANIFEST_DIR
+        / "frame_manifest.csv"
     )
 
-    df.to_csv(output_csv, index = False)
+    eol_anchors = (
+        MANIFEST_DIR
+        / "eol_anchors.csv"
+    )
 
-    print(f"\nSaved: {output_csv}")
-    print(f"Total samples: {len(df)}")
-    print(df.head())
-    
+    labels_csv = (
+        MANIFEST_DIR
+        / "labels.csv"
+    )
+
+    generate_labels(
+        manifest_csv=frame_manifest,
+        eol_csv=eol_anchors,
+        output_csv=labels_csv
+    )
+
+
 if __name__ == "__main__":
     main()
-

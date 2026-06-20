@@ -19,22 +19,19 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 # Image formats accepted when scanning the input folder.
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 # Default paths for running the script on this project's sample_data.
 # For other datasets, pass --input-dir, --mask-dir, and --output-csv from the command line.
-DEFAULT_INPUT_DIR = Path(
-    r"C:\fluttersrc\Strawberry-RUL-prediction\sample_data\raw_data\18-03-2026\cropped"
-)
-DEFAULT_MASK_DIR = Path(
-    r"C:\fluttersrc\Strawberry-RUL-prediction\sample_data\processed\segmented_18-03-2026"
-)
-DEFAULT_RESULT_DIR = Path(
-    r"C:\fluttersrc\Strawberry-RUL-prediction\sample_data\frame_differencing_results"
-)
-DEFAULT_OUTPUT_CSV = DEFAULT_RESULT_DIR / "frame_differencing_report.csv"
+DEFAULT_INPUT_DIR = PROJECT_ROOT / "data" / "02_processed" / "cropped_18-03-2026"
+
+# 
+DEFAULT_MASK_DIR = PROJECT_ROOT / "data" / "02_processed" / "segmented_18-03-2026"
+
+DEFAULT_RESULT_DIR = PROJECT_ROOT / "data" / "02_processed" / "frame_differencing_results_18-03-2026"
+DEFAULT_OUTPUT_CSV = DEFAULT_RESULT_DIR / "frame_differencing_report_18-03-2026.csv"
 DEFAULT_DEBUG_DIR = DEFAULT_RESULT_DIR / "motion_masks"
 DEFAULT_OVERLAY_DIR = DEFAULT_RESULT_DIR / "motion_overlays"
 
@@ -153,7 +150,7 @@ def preprocess_for_diff(image, max_side=900):
 
     # Normalize local brightness before differencing so sunlight/exposure changes
     # are less likely to be counted as object motion.
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=1.0, tileGridSize=(16, 16))
     gray = clahe.apply(gray)
 
     return cv2.GaussianBlur(gray, (5, 5), 0)
@@ -640,7 +637,7 @@ def parse_args():
     parser.add_argument("--overlay-dir", type=Path, default=DEFAULT_OVERLAY_DIR)
     parser.add_argument("--motion-threshold", type=float, default=0.015)
     parser.add_argument("--component-threshold", type=float, default=0.006)
-    parser.add_argument("--pixel-threshold", type=int, default=25)
+    parser.add_argument("--pixel-threshold", type=int, default=45)
     parser.add_argument(
         "--reference-strategy",
         choices=["previous", "last_stable"],

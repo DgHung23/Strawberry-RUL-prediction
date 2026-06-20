@@ -1,9 +1,11 @@
 import os
 import re
 import shutil
+from pathlib import Path
 
-INPUT_DIR = r"C:\Users\THANH CONG\Documents\Strawberry-RUL-prediction\data\02_processed\segmented_18-03-2026"
-OUTPUT_DIR = r"C:\Users\THANH CONG\Documents\assigned_18-03-2026"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+INPUT_DIR = PROJECT_ROOT / "data" / "02_processed" / "segmented_21-03-2026"
+OUTPUT_DIR = PROJECT_ROOT / "data" / "02_processed" / "assigned_21-03-2026"
 
 
 def main():
@@ -17,20 +19,25 @@ def main():
         if not filename.lower().endswith(".png"):
             continue
 
-        match = re.search(
-            r"strawberry_(\d+)\.png$",
-            filename
-        )
+        match = re.search(r"^(.*?)_strawberry_(\d+)\.png$", filename)
 
         if not match:
             print(f"Skip: {filename}")
             continue
 
-        strawberry_id = match.group(1)
+        prefix = match.group(1)       # Ví dụ: "frame-1_12-26-28"
+        strawberry_id = match.group(2) # Ví dụ: "1"
 
+        # Chuyển đổi ID thành dạng 2 chữ số (1 -> 01, 2 -> 02,...)
+        formatted_id = f"{int(strawberry_id):02d}"
+
+        # Tạo tên file mới theo định dạng mong muốn: frame-1_12-26-28_F_01.png
+        new_filename = f"{prefix}_F{formatted_id}.png"
+
+        # Tạo thư mục phân loại riêng cho từng quả dâu (ví dụ: folder "strawberry_01")
         target_folder = os.path.join(
             OUTPUT_DIR,
-            f"strawberry_{strawberry_id}"
+            f"F{formatted_id}"
         )
 
         os.makedirs(
@@ -45,7 +52,7 @@ def main():
 
         dst_path = os.path.join(
             target_folder,
-            filename
+            new_filename
         )
 
         shutil.copy2(
