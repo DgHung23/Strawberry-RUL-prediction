@@ -1,16 +1,22 @@
 import cv2
 from pathlib import Path
+import re
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-INPUT_DIR = PROJECT_ROOT / "data" / "01_raw" / "21-03-2026"
-OUTPUT_DIR = PROJECT_ROOT / "data" / "02_processed" / "cropped_21-03-2026" # folder name
+INPUT_DIR = PROJECT_ROOT / "data" / "01_raw"
+OUTPUT_DIR = PROJECT_ROOT / "data" / "02_processed" 
 
 # the target you wanna crop image
 TARGET_WIDTH = 1116
 TARGET_HEIGHT = 930
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
+
+def is_date_folder(folder_name):
+    return bool(
+        re.match(r"^\d{2}-\d{2}-\d{4}$", folder_name)
+    )
 
 
 def center_crop(image, target_width, target_height):
@@ -29,42 +35,100 @@ def center_crop(image, target_width, target_height):
 
 
 def main():
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    image_paths = [
-        path for path in sorted(INPUT_DIR.iterdir())
-        if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
-    ]
+    
+    date_folders = sorted(
+        [
+            folder
+            for folder in INPUT_DIR.iterdir()
+            if folder.is_dir() and is_date_folder(folder.name)
+        ]
+    )
+    
 
-    if not image_paths:
-        print(f"No image files found in: {INPUT_DIR}")
+    if not date_folders:
+        print(f"No date folders found in: {INPUT_DIR}")
         return
 
-    cropped_count = 0
-    skipped_count = 0
+    total_cropped = 0
+    total_skipped = 0
 
-    for image_path in image_paths:
-        image = cv2.imread(str(image_path))
-        if image is None:
-            print(f"Skip unreadable image: {image_path.name}")
-            skipped_count += 1
+    
+    for input_dir in date_folders:
+   
+
+        
+        date_str = input_dir.name
+        output_dir = OUTPUT_DIR / f"cropped_{date_str}"
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        print("\n" + "=" * 50)
+        print(f"Processing folder: {date_str}")
+        print("=" * 50)
+        
+
+        image_paths = [
+            path
+            for path in sorted(input_dir.iterdir())
+            if path.is_file()
+            and path.suffix.lower() in IMAGE_EXTENSIONS
+        ]
+
+        if not image_paths:
+            print(f"No image files found in: {input_dir}")
             continue
 
-        try:
-            cropped = center_crop(image, TARGET_WIDTH, TARGET_HEIGHT)
-        except ValueError as error:
-            print(f"Skip {image_path.name}: {error}")
-            skipped_count += 1
-            continue
+        cropped_count = 0
+        skipped_count = 0
 
-        output_path = OUTPUT_DIR / image_path.name
-        cv2.imwrite(str(output_path), cropped)
-        cropped_count += 1
-        print(f"Cropped {image_path.name} -> {output_path.name}")
+        for image_path in image_paths:
 
-    print("=" * 40)
-    print(f"Done. Cropped: {cropped_count}, skipped: {skipped_count}")
-    print(f"Output folder: {OUTPUT_DIR}")
+            image = cv2.imread(str(image_path))
+
+            if image is None:
+                print(f"Skip unreadable image: {image_path.name}")
+                skipped_count += 1
+                continue
+
+            try:
+                cropped = center_crop(
+                    image,
+                    TARGET_WIDTH,
+                    TARGET_HEIGHT
+                )
+
+            except ValueError as error:
+                print(f"Skip {image_path.name}: {error}")
+                skipped_count += 1
+                continue
+
+            output_path = output_dir / image_path.name
+
+            cv2.imwrite(str(output_path), cropped)
+
+            cropped_count += 1
+
+            print(
+                f"Cropped {image_path.name} -> {output_path.name}"
+            )
+
+        print("-" * 40)
+        print(
+            f"Folder {date_str}: "
+            f"Cropped={cropped_count}, "
+            f"Skipped={skipped_count}"
+        )
+
+        total_cropped += cropped_count
+        total_skipped += skipped_count
+
+    print("\n" + "=" * 50)
+    print(
+        f"Done. Total cropped: {total_cropped}, "
+        f"total skipped: {total_skipped}"
+    )
+    print(f"Output: {OUTPUT_DIR}")
 
 
 if __name__ == "__main__":

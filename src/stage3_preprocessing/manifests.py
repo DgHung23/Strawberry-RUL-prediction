@@ -4,11 +4,10 @@ import pandas as pd
 import json
 import re
 
-# ==========================================================
-# CONFIG
-# ==========================================================
 
-ROOT_DIR = Path(r"C:\fluttersrc\Strawberry-RUL-prediction\data\02_processed")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+ROOT_DIR = PROJECT_ROOT / "data" / "02_processed"
 MANIFEST_DIR = ROOT_DIR / "manifests"
 
 
@@ -17,9 +16,7 @@ MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
 FRUIT_TYPE = "strawberry"
 EXPERIMENT_ID = "strawberry_experiment"
 
-# ==========================================================
-# HELPERS
-# ==========================================================
+
 
 def parse_datetime(date_str: str, filename: str):
     """

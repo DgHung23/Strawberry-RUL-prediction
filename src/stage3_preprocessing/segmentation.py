@@ -9,7 +9,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-
+processed_root = PROJECT_ROOT / "data" / "02_processed"
 # Default input folder containing cropped raw images and output folder for segmented strawberries.
 # You can still edit these defaults, or pass --input-dir / --output-dir from the command line.
 input_dir = PROJECT_ROOT / "data" / "02_processed" / "cropped_18-03-2026"
@@ -37,6 +37,12 @@ def natural_sort_key(path):
     parts = re.split(r'(\d+)', stem)
     return [int(part) if part.isdigit() else part for part in parts]
 
+
+def is_cropped_folder(folder_name):
+    return re.match(
+        r"^cropped_\d{2}-\d{2}-\d{4}$",
+        folder_name
+    ) is not None
 
 def extract_frame_number(path):
     """Extract the number from names like frame-12_15-11-29.jpg."""
@@ -182,113 +188,168 @@ def parse_args():
 
 def main():
     args = parse_args()
-    os.makedirs(args.output_dir, exist_ok=True)
-    mask_output_dir = build_mask_output_dir(args)
-    os.makedirs(mask_output_dir, exist_ok=True)
 
-    image_paths = sorted(glob.glob(os.path.join(args.input_dir, '*.jpg')), key=natural_sort_key)
-    image_paths = [path for path in image_paths if should_process_image(path, args)]
+    cropped_folders = sorted(
+        [
+            folder
+            for folder in processed_root.iterdir()
+            if folder.is_dir()
+            and is_cropped_folder(folder.name)
+        ]
+    )
 
-    if not image_paths:
-        print(f'Cannot find any matching images in: {args.input_dir}')
+    if not cropped_folders:
+        print("No cropped folders found.")
         return
 
-    print(f'Found {len(image_paths)} images to process.')
-    if args.start_frame is not None or args.end_frame is not None or args.only_frame:
-        print(f'Frame filter: start={args.start_frame}, end={args.end_frame}, only={args.only_frame}, skip={args.skip_frame}')
-    print()
+    for current_input_dir in cropped_folders:
 
-    for img_path in image_paths:
-        base_name = os.path.splitext(os.path.basename(img_path))[0]
+        date_str = current_input_dir.name.replace(
+            "cropped_",
+            ""
+        )
 
-        if not args.keep_existing:
-            for old_output_path in glob.glob(os.path.join(args.output_dir, f'{base_name}_strawberry_*.png')):
-                os.remove(old_output_path)
-            for old_mask_path in glob.glob(os.path.join(mask_output_dir, f'{base_name}_strawberry_*_mask.png')):
-                os.remove(old_mask_path)
+        current_output_dir = (
+            processed_root /
+            f"segmented_{date_str}"
+        )
 
-        img = cv2.imread(img_path)
-        if img is None:
-            print(f'Cannot read image: {img_path}')
+        os.makedirs(current_output_dir, exist_ok=True)
+
+        temp_args = argparse.Namespace(**vars(args))
+
+        temp_args.input_dir = str(current_input_dir)
+        temp_args.output_dir = str(current_output_dir)
+
+        mask_output_dir = build_mask_output_dir(temp_args)
+
+        os.makedirs(mask_output_dir, exist_ok=True)
+
+        print("\n" + "=" * 60)
+        print(f"Processing date: {date_str}")
+        print("=" * 60)
+
+        image_paths = sorted(
+            glob.glob(
+                os.path.join(
+                    temp_args.input_dir,
+                    "*.jpg"
+                )
+            ),
+            key=natural_sort_key
+        )
+        image_paths = [path for path in image_paths if should_process_image(path, temp_args)]
+
+        if not image_paths:
+            print(f'Cannot find any matching images in: {temp_args.input_dir}')
             continue
 
-        h, w = img.shape[:2]
-        print(f'--- Processing image, pls wait: {base_name} ({w}x{h}) ---')
+        print(f'Found {len(image_paths)} images to process.')
+        if args.start_frame is not None or args.end_frame is not None or args.only_frame:
+            print(f'Frame filter: start={args.start_frame}, end={args.end_frame}, only={args.only_frame}, skip={args.skip_frame}')
+        print()
 
-        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-        thresh = create_strawberry_candidate_mask(hsv)
+        for img_path in image_paths:
+            base_name = os.path.splitext(os.path.basename(img_path))[0]
 
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = [cnt for cnt in contours if is_valid_strawberry_contour(cnt, h, w)]
-        contours = sorted(contours, key=lambda cnt: (cv2.boundingRect(cnt)[1], cv2.boundingRect(cnt)[0]))
+            if not args.keep_existing:
+                for old_output_path in glob.glob(os.path.join(temp_args.output_dir, f'{base_name}_strawberry_*.png')):
+                    os.remove(old_output_path)
+                for old_mask_path in glob.glob(os.path.join(mask_output_dir, f'{base_name}_strawberry_*_mask.png')):
+                    os.remove(old_mask_path)
+
+            img = cv2.imread(img_path)
+            if img is None:
+                print(f'Cannot read image: {img_path}')
+                continue
+
+            h, w = img.shape[:2]
+            print(f'--- Processing image, pls wait: {base_name} ({w}x{h}) ---')
+
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+            thresh = create_strawberry_candidate_mask(hsv)
+
+            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            contours = [cnt for cnt in contours if is_valid_strawberry_contour(cnt, h, w)]
+            contours = sorted(contours, key=lambda cnt: (cv2.boundingRect(cnt)[1], cv2.boundingRect(cnt)[0]))
+            
+            segmented_count = 0
 
         
-        for cnt in contours:
-            # 1. Tính toán tọa độ tâm (Centroid) của quả dâu
-            M = cv2.moments(cnt)
-            if M["m00"] == 0:
-                continue
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
+            for cnt in contours:
+                # calculate contour center
+                M = cv2.moments(cnt)
+                if M["m00"] == 0:
+                    continue
+                cX = int(M["m10"] / M["m00"])
+                cY = int(M["m01"] / M["m00"])
 
-            # 2. Định vị Dòng (row) và Cột (col) dựa trên lưới vùng ảnh
-            if cY < (h / 2):
-                row = 0
-            else:
-                row = 1
+                # positioning rows and columns based on the image area 
+                if cY < (h / 2):
+                    row = 0
+                else:
+                    row = 1
 
-            if cX < (w / 3):
-                col = 0
-            elif cX < (2 * w / 3):
-                col = 1
-            else:
-                col = 2
+                if cX < (w / 3):
+                    col = 0
+                elif cX < (2 * w / 3):
+                    col = 1
+                else:
+                    col = 2
 
-            # 3. Tính toán ID cố định từ 1 đến 6 dựa trên vị trí vùng
-            strawberry_idx = (row * 3) + col + 1
+                # caculate strawberry index based on row and column, for example:
+                # row 0, col 0 -> strawberry_idx = 1
+                # row 0, col 1 -> strawberry_idx = 2
+                # row 0, col 2 -> strawberry_idx = 3
+                # row 1, col 0 -> strawberry_idx = 4
+                # row 1, col 1 -> strawberry_idx = 5
+                # row 1, col 2 -> strawberry_idx = 6
+                strawberry_idx = (row * 3) + col + 1
 
-            # 4. Cắt ROI và thực hiện xử lý ảnh nền như cũ
-            x, y, w_box, h_box = cv2.boundingRect(cnt)
+                # crop the strawberry with some padding around the bounding box of the contour
+                x, y, w_box, h_box = cv2.boundingRect(cnt)
 
-            pad = 20
-            x_start = max(0, x - pad)
-            y_start = max(0, y - pad)
-            x_end = min(w, x + w_box + pad)
-            y_end = min(h, y + h_box + pad)
+                pad = 20
+                x_start = max(0, x - pad)
+                y_start = max(0, y - pad)
+                x_end = min(w, x + w_box + pad)
+                y_end = min(h, y + h_box + pad)
 
-            roi = img[y_start:y_end, x_start:x_end]
-            roi_color_support = thresh[y_start:y_end, x_start:x_end]
+                roi = img[y_start:y_end, x_start:x_end]
+                roi_color_support = thresh[y_start:y_end, x_start:x_end]
 
-            mask = create_grabcut_mask(roi, roi_color_support)
-            bgdModel = np.zeros((1, 65), np.float64)
-            fgdModel = np.zeros((1, 65), np.float64)
+                mask = create_grabcut_mask(roi, roi_color_support)
+                bgdModel = np.zeros((1, 65), np.float64)
+                fgdModel = np.zeros((1, 65), np.float64)
 
-            cv2.grabCut(roi, mask, None, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_MASK)
+                cv2.grabCut(roi, mask, None, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_MASK)
 
-            mask_res = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
-            mask_res = refine_foreground_mask(mask_res, roi_color_support, roi)
-            if np.count_nonzero(mask_res) < max(200, int(0.0002 * h * w)):
-                continue
+                mask_res = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+                mask_res = refine_foreground_mask(mask_res, roi_color_support, roi)
+                if np.count_nonzero(mask_res) < max(200, int(0.0002 * h * w)):
+                    continue
 
-            strawberry_transparent = apply_mask_to_roi(roi, mask_res)
+                strawberry_transparent = apply_mask_to_roi(roi, mask_res)
 
-            output_filename = f'{base_name}_strawberry_{strawberry_idx}.png'
-            output_path = os.path.join(args.output_dir, output_filename)
-            cv2.imwrite(output_path, strawberry_transparent)
+                output_filename = f'{base_name}_strawberry_{strawberry_idx}.png'
+                output_path = os.path.join(temp_args.output_dir, output_filename)
+                cv2.imwrite(output_path, strawberry_transparent)
 
-            full_size_mask = np.zeros((h, w), dtype=np.uint8)
-            full_size_mask[y_start:y_end, x_start:x_end] = mask_res * 255
+                full_size_mask = np.zeros((h, w), dtype=np.uint8)
+                full_size_mask[y_start:y_end, x_start:x_end] = mask_res * 255
 
-            mask_filename = f'{base_name}_strawberry_{strawberry_idx}_mask.png'
-            mask_path = os.path.join(mask_output_dir, mask_filename)
-            cv2.imwrite(mask_path, full_size_mask)
-        # =====================================================
+                mask_filename = f'{base_name}_strawberry_{strawberry_idx}_mask.png'
+                mask_path = os.path.join(mask_output_dir, mask_filename)
+                cv2.imwrite(mask_path, full_size_mask)
+                
+                segmented_count += 1
+            
 
-        print(f'-> Done {base_name}: segmented {strawberry_idx - 1} strawberries <-\n')
+            print(f'-> Done {base_name}: segmented {segmented_count} strawberries <-\n')
 
-    print('=' * 40)
-    print('Done segmentation for selected images')
-    print(f'Output folder: {args.output_dir}')
+        print('=' * 40)
+        print(f'Done segmentation for {date_str}')
+        print(f'Output folder: {current_output_dir}')
 
 
 if __name__ == '__main__':

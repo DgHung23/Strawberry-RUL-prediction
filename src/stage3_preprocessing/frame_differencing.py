@@ -652,18 +652,43 @@ def main():
     """Entry point when running: python frame_differencing.py ..."""
 
     args = parse_args()
-    results, rows = analyze_frame_sequence(
-        input_dir=args.input_dir,
-        mask_dir=args.mask_dir,
-        output_csv=args.output_csv,
-        debug_dir=args.debug_dir,
-        overlay_dir=args.overlay_dir,
-        motion_threshold=args.motion_threshold,
-        component_threshold=args.component_threshold,
-        pixel_threshold=args.pixel_threshold,
-        reference_strategy=args.reference_strategy,
-        max_side=args.max_side,
+    processed_root = PROJECT_ROOT / "data" / "02_processed"
+
+    cropped_folders = sorted(
+    [
+        folder
+        for folder in processed_root.iterdir()
+        if folder.is_dir()
+        and folder.name.startswith("cropped_")
+    ]
     )
+    
+    for input_dir in cropped_folders:
+        date_str = input_dir.name.replace("cropped_", "")
+        mask_dir = processed_root / f"segmented_{date_str}"
+        result_dir = processed_root / f"frame_differencing_results_{date_str}"
+        output_csv = result_dir / f"frame_differencing_report_{date_str}.csv"
+        debug_dir = result_dir / "motion_masks"
+        overlay_dir = result_dir / "motion_overlays"
+
+        print(f"Processing input folder: {input_dir}")
+        print(f"Using mask folder: {mask_dir}")
+        print(f"Output CSV: {output_csv}")
+        print(f"Debug motion masks: {debug_dir}")
+        print(f"Overlay images: {overlay_dir}")
+
+        results, rows = analyze_frame_sequence(
+            input_dir=input_dir,
+            mask_dir=mask_dir,
+            output_csv=output_csv,
+            debug_dir=debug_dir,
+            overlay_dir=overlay_dir,
+            motion_threshold=args.motion_threshold,
+            component_threshold=args.component_threshold,
+            pixel_threshold=args.pixel_threshold,
+            reference_strategy=args.reference_strategy,
+            max_side=args.max_side,
+        )
 
     # Print a quick summary after processing finishes.
     motion_count = sum(result.motion_detected for result in results)
