@@ -662,6 +662,14 @@ def main():
         and folder.name.startswith("cropped_")
     ]
     )
+
+    if not cropped_folders:
+        print(f"No cropped folders found in: {processed_root}")
+        return
+
+    all_results = []
+    all_rows = []
+    output_csvs = []
     
     for input_dir in cropped_folders:
         date_str = input_dir.name.replace("cropped_", "")
@@ -689,24 +697,25 @@ def main():
             reference_strategy=args.reference_strategy,
             max_side=args.max_side,
         )
+        all_results.extend(results)
+        all_rows.extend(rows)
+        output_csvs.append(output_csv)
 
     # Print a quick summary after processing finishes.
-    motion_count = sum(result.motion_detected for result in results)
-    regenerate_count = sum(result.regenerate_mask for result in results)
+    motion_count = sum(result.motion_detected for result in all_results)
+    regenerate_count = sum(result.regenerate_mask for result in all_results)
     invalid_mask_count = sum(
-        1 for row in rows if str(row.get("mask_valid", "")).lower() == "false"
+        1 for row in all_rows if str(row.get("mask_valid", "")).lower() == "false"
     )
 
     print("=" * 60)
-    print(f"Frames analyzed: {len(results)}")
+    print(f"Frames analyzed: {len(all_results)}")
     print(f"Motion frames: {motion_count}")
     print(f"Frames needing new mask: {regenerate_count}")
     print(f"Invalid masks: {invalid_mask_count}")
-    print(f"Report saved to: {args.output_csv}")
-    if args.debug_dir:
-        print(f"Motion masks saved to: {args.debug_dir}")
-    if args.overlay_dir:
-        print(f"Motion overlays saved to: {args.overlay_dir}")
+    print("Reports saved to:")
+    for output_csv in output_csvs:
+        print(f"- {output_csv}")
 
 
 if __name__ == "__main__":

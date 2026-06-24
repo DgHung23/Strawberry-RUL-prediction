@@ -20,11 +20,21 @@ LABELS_CSV = (
     / "labels.csv"
 )
 
-df = pd.read_csv(FRAME_MANIFEST)
-df2 = pd.read_csv(LABELS_CSV)
 
-print("Columns in frame_manifest.csv:")
-print(df.columns.tolist())
+def print_columns(csv_path):
+    if not csv_path.exists():
+        print(f"Missing file: {csv_path}")
+        return
 
-print("Columns in labels.csv:")
-print(df2.columns.tolist())
+    df = pd.read_csv(csv_path)
+    print(f"Columns in {csv_path.name}:")
+    print(df.columns.tolist())
+
+
+def main():
+    print_columns(FRAME_MANIFEST)
+    print_columns(LABELS_CSV)
+
+
+if __name__ == "__main__":
+    main()

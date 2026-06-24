@@ -76,13 +76,47 @@ def fruit_to_mask_name(frame_base, fruit_id):
     )
 
 
+def parse_bool(value, default=False):
+    if pd.isna(value):
+        return default
+
+    if isinstance(value, bool):
+        return value
+
+    text = str(value).strip().lower()
+
+    if text in {"true", "1", "yes", "y"}:
+        return True
+
+    if text in {"false", "0", "no", "n", ""}:
+        return False
+
+    return default
+
+
+def append_reason(reasons, value):
+    if pd.isna(value):
+        return
+
+    text = str(value).strip()
+    if text and text.lower() != "nan" and text not in reasons:
+        reasons.append(text)
+
+
 def main():
     # LOAD QC REPORTS
     qc_lookup = {}
 
-    for report_path in ROOT_DIR.glob(
-        "frame_differencing_report_*.csv"
-    ):
+    report_paths = sorted(ROOT_DIR.glob("frame_differencing_report_*.csv"))
+    report_paths.extend(
+        sorted(
+            ROOT_DIR.glob(
+                "frame_differencing_results_*/frame_differencing_report_*.csv"
+            )
+        )
+    )
+
+    for report_path in report_paths:
 
         report_df = pd.read_csv(report_path)
 
@@ -92,23 +126,30 @@ def main():
                 row["frame_path"]
             ).stem
 
-            qc_lookup[frame_name] = {
-                "motion_detected":
-                    bool(row["motion_detected"]),
+            qc = qc_lookup.setdefault(
+                frame_name,
+                {
+                    "motion_detected": False,
+                    "mask_valid": True,
+                    "reason": [],
+                    "mask_reason": []
+                }
+            )
 
-                "mask_valid":
-                    bool(row["mask_valid"]),
+            qc["motion_detected"] = (
+                qc["motion_detected"]
+                or parse_bool(row.get("motion_detected"), default=False)
+            )
+            qc["mask_valid"] = (
+                qc["mask_valid"]
+                and parse_bool(row.get("mask_valid"), default=True)
+            )
+            append_reason(qc["reason"], row.get("reason"))
+            append_reason(qc["mask_reason"], row.get("mask_reason"))
 
-                "reason":
-                    str(row["reason"])
-                    if pd.notna(row["reason"])
-                    else "",
-
-                "mask_reason":
-                    str(row["mask_reason"])
-                    if pd.notna(row["mask_reason"])
-                    else ""
-                    }
+    for qc in qc_lookup.values():
+        qc["reason"] = "|".join(qc["reason"])
+        qc["mask_reason"] = "|".join(qc["mask_reason"])
 
 
     # BUILD MANIFESTS

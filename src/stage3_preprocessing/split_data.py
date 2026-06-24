@@ -115,7 +115,7 @@ def copy_split_images(rows, split_name, data_dir, output_dir):
     copied_rows = []
 
     for row in rows:
-        source_image_path, _ = get_image_paths(
+        source_image_path, relative_image_path = get_image_paths(
             row["image_path"],
             data_dir
         )
@@ -126,8 +126,9 @@ def copy_split_images(rows, split_name, data_dir, output_dir):
             )
 
         target_image_path = (
-            image_output_dir / source_image_path.name
+            image_output_dir / relative_image_path
         )
+        target_image_path.parent.mkdir(parents=True, exist_ok=True)
 
         shutil.copy2(
             source_image_path,
@@ -137,7 +138,7 @@ def copy_split_images(rows, split_name, data_dir, output_dir):
         copied_row = dict(row)
 
         copied_row["image_path"] = str(
-            Path("images") / source_image_path.name
+            Path("images") / relative_image_path
         ).replace("\\", "/")
 
         copied_rows.append(copied_row)
