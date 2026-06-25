@@ -2,18 +2,31 @@ import argparse
 import csv
 import shutil
 from pathlib import Path
+import json
 
 
 # Project root directory: .../Strawberry-RUL-prediction
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
+CONFIG_FILE = (
+    PROJECT_ROOT
+    / "src"
+    / "stage3_preprocessing"
+    / "config.json"
+)
+
+with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+    configs = json.load(f)
+
+active_dataset = configs["active_dataset"]
+
 # File labels:
 # image_path,date,fruit_id/strawberry_id,timestamp,rul_hours
-DEFAULT_LABELS_CSV = PROJECT_ROOT / "data" / "02_processed" / "manifests" / "labels.csv"
+DEFAULT_LABELS_CSV = PROJECT_ROOT / "data" / "02_processed" / "manifests" / active_dataset / "labels.csv"
 
 # folder after split:
 # data/03_split/train, data/03_split/val, data/03_split/test
-DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data" / "03_split"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "data" / "03_split" / active_dataset
 
 # Fixed fruit-ID split:
 # train: strawberry 1-4 (F01-F04), val: strawberry 5 (F05), test: strawberry 6 (F06)
@@ -51,7 +64,7 @@ def fruit_id_sort_key(fruit_id):
     return fruit_id, -1
 
 
-def group_rows_by_strawberry(rows, id_column):
+def group_rows_by_fruit(rows, id_column):
     # group the frames/images by strawberry_id and split them left-hand, not randomly split them by image
     groups = {}
 
@@ -66,7 +79,7 @@ def group_rows_by_strawberry(rows, id_column):
     return groups
 
 
-def split_strawberry_ids(strawberry_ids):
+def split_fruit_ids(strawberry_ids):
     # Split by fixed fruit IDs to prevent image-level leakage and keep experiments repeatable.
     expected_ids = {
         strawberry_id
@@ -165,22 +178,22 @@ def write_split_summary(split_to_ids, split_to_count, output_dir):
     with summary_csv.open("w", encoding="utf-8", newline="") as file:
         writer = csv.DictWriter(
             file,
-            fieldnames=["split", "strawberry_ids", "num_strawberries", "num_images"],
+            fieldnames=["split", "fruit_ids", "num_fruits", "num_images"],
         )
         writer.writeheader()
 
         for split_name, strawberry_ids in split_to_ids.items():
             writer.writerow({
                 "split": split_name,
-                "strawberry_ids": " ".join(strawberry_ids),
-                "num_strawberries": len(strawberry_ids),
+                "fruit_ids": " ".join(strawberry_ids),
+                "num_fruits": len(strawberry_ids),
                 "num_images": split_to_count[split_name],
             })
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Split strawberry dataset 4 train, 1 val, 1 test."
+        description=f"Split {active_dataset} dataset 4 train, 1 val, 1 test."
     )
     parser.add_argument(
         "--labels-csv",
@@ -212,10 +225,10 @@ def main():
         raise ValueError(f"File labels empty: {labels_csv}")
 
     id_column = get_id_column(rows)
-    groups = group_rows_by_strawberry(rows, id_column)
+    groups = group_rows_by_fruit(rows, id_column)
     strawberry_ids = sorted(groups.keys(), key=fruit_id_sort_key)
 
-    split_to_ids = split_strawberry_ids(strawberry_ids=strawberry_ids)
+    split_to_ids = split_fruit_ids(strawberry_ids=strawberry_ids)
 
     split_to_count = {}
 
@@ -247,7 +260,7 @@ def main():
 
     for split_name, ids in split_to_ids.items():
         print(
-            f"{split_name}: strawberry_id={ids}, "
+            f"{split_name}: fruit_id={ids}, "
             f"images={split_to_count[split_name]}"
         )
 
