@@ -28,11 +28,11 @@ def main():
     # Step 2: Crop images to focus on strawberries
     run_step("Crop Images", crop_images_main)
 
-    # Step 3: Perform frame differencing to detect motion
-    run_step("Frame Differencing", frame_differencing_main)
-
-    # Step 4: Segment strawberries from the background
+    # Step 3: Segment strawberries from the background
     run_step("Segmentation", segmentation_main)
+
+    # Step 4: Perform frame differencing after masks exist for QC
+    run_step("Frame Differencing", frame_differencing_main)
 
     # Step 5: Assign unique IDs to each strawberry
     run_step("Assign IDs", assign_id_main)
@@ -40,11 +40,11 @@ def main():
     # Step 6: Generate end-of-life (EOL) anchors for strawberries
     run_step("Generate EOL Anchors", eol_main)
 
-    # Step 7: Label remaining useful life (RUL) for each strawberry
-    run_step("Label RUL", label_rul_main)
+    # Step 7: Generate manifests for the dataset
+    run_step("Generate Manifests", manifests_main)
 
-    # Step 8: Generate manifests for the dataset
-    run_step("Generate Manifests", manifests_main())
+    # Step 8: Label remaining useful life (RUL) for each strawberry
+    run_step("Label RUL", label_rul_main)
 
     # Step 9: Split data into training, validation, and test sets
     run_step("Split Data", split_data_main)

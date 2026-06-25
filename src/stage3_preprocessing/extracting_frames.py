@@ -37,6 +37,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 data_root = PROJECT_ROOT / "data"
 raw_root = data_root / "01_raw"
+processed_root = data_root / "02_processed"
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -48,23 +49,37 @@ max_pending_writes = save_workers * 4 # limit the number of pending writes to av
 
 def save_frame(filename, frame):
     return cv2.imwrite(filename, frame)
+
+
+def video_sort_key(filename):
+    match = re.search(r"_(\d{2}-\d{2}-\d{2})", filename)
+    if match:
+        return match.group(1)
+    return filename
+
+
 def main():
     date_folders = []
 
-    for item in os.listdir(data_root):
+    for item in os.listdir(raw_root):
 
-        folder_path = data_root / item
+        folder_path = raw_root / item
 
         if not folder_path.is_dir():
             continue
 
         normalized_date = normalize_date_folder(item)
 
-        if normalized_date is not None:
+        has_videos = any(
+            path.is_file() and path.suffix.lower() == ".mp4"
+            for path in folder_path.iterdir()
+        )
+
+        if normalized_date is not None and has_videos:
             date_folders.append((folder_path, normalized_date))
 
     if not date_folders:
-        print("No valid date folders found.")
+        print(f"No valid raw video folders found in: {raw_root}")
         return
     
     date_folders.sort(
@@ -78,7 +93,7 @@ def main():
             print(f"Processing folder: {video_folder.name}")
             print(f"{'='*60}")
 
-            output_folder = raw_root / output_date
+            output_folder = processed_root / f"frames_{output_date}"
             os.makedirs(output_folder, exist_ok=True)
 
             csv_path = output_folder / "all_frames.csv"
@@ -89,7 +104,7 @@ def main():
                     for f in os.listdir(video_folder)
                     if f.lower().endswith(".mp4")
                 ],
-                key=lambda x: x.split("_")[1].replace(".mp4", "")
+                key=video_sort_key
             )
 
             with open(csv_path, "w", newline="") as f:
