@@ -208,7 +208,7 @@ def main():
     rows = read_labels(labels_csv)
 
     if not rows:
-        raise ValueError(f"File labels rong: {labels_csv}")
+        raise ValueError(f"File labels empty: {labels_csv}")
 
     id_column = get_id_column(rows)
     groups = group_rows_by_strawberry(rows, id_column)
