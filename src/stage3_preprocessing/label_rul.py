@@ -6,7 +6,10 @@ import json
 def generate_labels(
     manifest_csv: Path,
     eol_csv: Path,
-    output_csv: Path
+    environment_csv: Path,
+    firmness_csv: Path,
+    output_csv: Path,
+    
 ):
     """
     Generate labels.csv for Strawberry RUL prediction.
@@ -17,6 +20,17 @@ def generate_labels(
 
     print("Loading EOL anchors...")
     eol_df = pd.read_csv(eol_csv)
+    
+    print("Loading environment data...")
+    environment_df = pd.read_csv(environment_csv)
+    environment_df = environment_df.rename(
+    columns={
+        "humidity_rh":"humidity_pct"
+        }
+    )
+    
+    print("Loading hardness data...")
+    firmness_df = pd.read_csv(firmness_csv)
 
     
     # Convert datetime
@@ -27,7 +41,6 @@ def generate_labels(
     eol_df["eol_timestamp"] = pd.to_datetime(
         eol_df["eol_timestamp"]
     )
-
     
     # Merge EOL information
     labels_df = manifest_df.merge(
@@ -40,7 +53,37 @@ def generate_labels(
     ],
     on="fruit_id",
     how="left"
-)
+    )
+    
+    # environment data
+    environment_df["timestamp"] = pd.to_datetime(
+    environment_df["timestamp"]
+    )
+
+    labels_df = labels_df.merge(
+    environment_df[ 
+            [
+                "timestamp", 
+                "temperature_c", 
+                "humidity_pct"
+            ] 
+        ],
+    on="timestamp",
+    how="left"
+    )
+    
+    # hardness data
+    labels_df["date"] = labels_df["timestamp"].dt.date
+
+    firmness_df["date"] = pd.to_datetime(
+    firmness_df["date"]
+    ).dt.date
+    
+    labels_df = labels_df.merge(
+    firmness_df,
+    on=["date","fruit_id"],
+    how="left"
+    )
 
     
     # Check missing EOL
@@ -74,9 +117,9 @@ def generate_labels(
 
     labels_df["raw_path"] = ""
 
-    labels_df["firmness_avg"] = pd.NA
+    labels_df["firmness_avg"] = labels_df["firmness"]  # declare your hardness (firmness) here
 
-    labels_df["firmness_available"] = False
+    labels_df["firmness_available"] = ( labels_df["firmness_avg"].notna() )   # declare your hardness (firmness) here
 
     labels_df["valid_frame"] = labels_df["mask_valid"]
 
@@ -171,10 +214,22 @@ def main():
         MANIFEST_DIR
         / "labels.csv"
     )
+    
+    environment_csv = (
+        MANIFEST_DIR
+        / "env.csv"  # CHANGE YOUR CSV NAME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    )
+    
+    firmness_csv = (
+        MANIFEST_DIR
+        / "hardness.csv"  # CHANGE YOUR CSV NAME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    )
 
     generate_labels(
         manifest_csv=frame_manifest,
         eol_csv=eol_anchors,
+        environment_csv=environment_csv,
+        firmness_csv=firmness_csv,
         output_csv=labels_csv
     )
 
