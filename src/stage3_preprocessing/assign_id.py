@@ -2,20 +2,35 @@ import os
 import re
 import shutil
 from pathlib import Path
+import json
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+CONFIG_FILE = PROJECT_ROOT / "src" / "stage3_preprocessing" / "config.json"
+
+with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+    configs = json.load(f)
+
+active_dataset = configs["active_dataset"]
+dataset_cfg = configs["datasets"][active_dataset]
 
 PROCESSED_ROOT = PROJECT_ROOT / "data" / "02_processed"
 
 def is_segmented_folder(folder_name):
-    return re.match(
-        r"^segmented_\d{2}-\d{2}-\d{4}$",
-        folder_name
-    ) is not None
+
+    if active_dataset == "strawberry":
+        return re.match(
+            r"^segmented_\d{2}-\d{2}-\d{4}$",
+            folder_name
+        ) is not None
+
+    return folder_name == f"segmented_{active_dataset}"
 
 def main():
 
-    segmented_folders = sorted(
+    if active_dataset == "strawberry":
+
+        segmented_folders = sorted(
         [
             folder
             for folder in PROCESSED_ROOT.iterdir()
@@ -24,21 +39,25 @@ def main():
         ]
     )
 
+    else:
+        segmented_folders = [PROCESSED_ROOT / f"segmented_{active_dataset}"]
+
     if not segmented_folders:
         print("No segmented folders found.")
         return
 
     for input_dir in segmented_folders:
 
-        date_str = input_dir.name.replace(
-            "segmented_",
-            ""
-        )
+        if active_dataset == "strawberry":
 
-        output_dir = (
-            PROCESSED_ROOT /
-            f"assigned_{date_str}"
-        )
+            date_str = input_dir.name.replace("segmented_","")
+
+            output_dir = (PROCESSED_ROOT / f"assigned_{date_str}")
+
+        else:
+            date_str = active_dataset
+
+            output_dir = (PROCESSED_ROOT / f"assigned_{active_dataset}")
 
         os.makedirs(
             output_dir,
@@ -56,10 +75,7 @@ def main():
             if not filename.lower().endswith(".png"):
                 continue
 
-            match = re.search(
-                r"^(.*?)_strawberry_(\d+)\.png$",
-                filename
-            )
+            match = re.search(rf"^(.*?)_{active_dataset}_(\d+)\.png$", filename)
 
             if not match:
                 print(f"Skip: {filename}")

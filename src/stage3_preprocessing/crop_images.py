@@ -1,17 +1,25 @@
 import cv2
 from pathlib import Path
 import re
+import json
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
+CONFIG_FILE = Path(__file__).resolve().parent / "config.json"
+with open(CONFIG_FILE, "r", encoding="utf-8") as file:
+    configs = json.load(file)
 
-RAW_INPUT_DIR = PROJECT_ROOT / "data" / "01_raw"
-PROCESSED_DIR = PROJECT_ROOT / "data" / "02_processed"
-OUTPUT_DIR = PROCESSED_DIR
+# get config
+active_dataset = configs["active_dataset"]
+PROCESSED_DIR = PROJECT_ROOT / configs["processed_dir"]
+config = configs["datasets"][active_dataset]
+RAW_INPUT_DIR = PROJECT_ROOT / config["input_dir"]
+OUTPUT_DIR = PROJECT_ROOT / config["output_dir"]
+TARGET_WIDTH = config["crop"]["width"]
+TARGET_HEIGHT = config["crop"]["height"]
+IMAGE_TYPE = config["image_type"]
 
-# the target you wanna crop image
-TARGET_WIDTH = 1116
-TARGET_HEIGHT = 930
+
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png"}
 
 def is_date_folder(folder_name):
@@ -19,13 +27,23 @@ def is_date_folder(folder_name):
         re.match(r"^\d{2}-\d{2}-\d{4}$", folder_name)
     )
 
-
-def is_frames_folder(folder_name):
+# search image for strawberry
+def is_strawberry_folder(folder_name):
     return bool(
         re.match(r"^frames_\d{2}-\d{2}-\d{4}$", folder_name)
     )
 
+# search image for avocado
+def is_avocado_folder(filename):
+    return bool(
+        re.match(
+            r"^webcam_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.(jpg|jpeg|png)$",
+            filename,
+            re.IGNORECASE
+        )
+    )
 
+# collect input for strawberry
 def collect_input_folders():
     input_by_date = {}
 
@@ -36,12 +54,23 @@ def collect_input_folders():
 
     if PROCESSED_DIR.exists():
         for folder in PROCESSED_DIR.iterdir():
-            if folder.is_dir() and is_frames_folder(folder.name):
+            if folder.is_dir() and is_strawberry_folder(folder.name):
                 date_str = folder.name.replace("frames_", "")
                 input_by_date[date_str] = folder
 
     return sorted(input_by_date.items())
 
+# collect image for avocado
+def collect_images():
+    if not RAW_INPUT_DIR.exists():
+        return []
+
+    return [
+        path
+        for path in sorted(RAW_INPUT_DIR.iterdir())
+        if path.is_file()
+        and is_avocado_folder(path.name)
+    ]
 
 def center_crop(image, target_width, target_height):
     height, width = image.shape[:2]
@@ -57,49 +86,76 @@ def center_crop(image, target_width, target_height):
     y_end = y_start + target_height
     return image[y_start:y_end, x_start:x_end]
 
+def process_avocado():
+    image_paths = collect_images()
 
-def main():
-
-    
-    date_folders = collect_input_folders()
-    
-
-    if not date_folders:
-        print(
-            "No frame folders found. Expected "
-            f"{PROCESSED_DIR / 'frames_DD-MM-YYYY'} or legacy "
-            f"{RAW_INPUT_DIR / 'DD-MM-YYYY'} folders."
-        )
+    if not image_paths:
+        print("No avocado images found.")
         return
+
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     total_cropped = 0
     total_skipped = 0
 
+    print("\n" + "=" * 50)
+    print("Processing: AVOCADO dataset")
+    print("=" * 50)
+
+    for image_path in image_paths:
+
+        image = cv2.imread(str(image_path))
+
+        if image is None:
+            print(f"Skip unreadable image: {image_path.name}")
+            total_skipped += 1
+            continue
+
+        try:
+            cropped = center_crop(image, TARGET_WIDTH, TARGET_HEIGHT)
+        except ValueError as e:
+            print(f"Skip {image_path.name}: {e}")
+            total_skipped += 1
+            continue
+
+        output_path = OUTPUT_DIR / image_path.name
+        cv2.imwrite(str(output_path), cropped)
+
+        total_cropped += 1
+        print(f"Cropped {image_path.name}")
+
+    print("-" * 40)
+    print(f"Done AVOCADO: cropped={total_cropped}, skipped={total_skipped}")
     
-    for date_str, input_dir in date_folders:
-   
+def process_strawberry():
+    folders = collect_input_folders()
 
-        
-        output_dir = OUTPUT_DIR / f"cropped_{date_str}"
+    if not folders:
+        print("No strawberry frame folders found.")
+        return
 
-        output_dir.mkdir(parents=True, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-        print("\n" + "=" * 50)
-        print(f"Processing folder: {date_str}")
-        print(f"Input: {input_dir}")
-        print("=" * 50)
-        
+    total_cropped = 0
+    total_skipped = 0
+
+    print("\n" + "=" * 50)
+    print("Processing: STRAWBERRY dataset")
+    print("=" * 50)
+
+    for date_str, input_dir in folders:
 
         image_paths = [
-            path
-            for path in sorted(input_dir.iterdir())
-            if path.is_file()
-            and path.suffix.lower() in IMAGE_EXTENSIONS
+            p for p in sorted(input_dir.iterdir())
+            if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS
         ]
 
         if not image_paths:
-            print(f"No image files found in: {input_dir}")
+            print(f"No images in folder: {input_dir}")
             continue
+
+        output_folder = OUTPUT_DIR / f"cropped_{date_str}"
+        output_folder.mkdir(parents=True, exist_ok=True)
 
         cropped_count = 0
         skipped_count = 0
@@ -114,44 +170,37 @@ def main():
                 continue
 
             try:
-                cropped = center_crop(
-                    image,
-                    TARGET_WIDTH,
-                    TARGET_HEIGHT
-                )
-
-            except ValueError as error:
-                print(f"Skip {image_path.name}: {error}")
+                cropped = center_crop(image, TARGET_WIDTH, TARGET_HEIGHT)
+            except ValueError as e:
+                print(f"Skip {image_path.name}: {e}")
                 skipped_count += 1
                 continue
 
-            output_path = output_dir / image_path.name
-
+            output_path = output_folder / image_path.name
             cv2.imwrite(str(output_path), cropped)
 
             cropped_count += 1
-
-            print(
-                f"Cropped {image_path.name} -> {output_path.name}"
-            )
+            print(f"Cropped {image_path.name}")
 
         print("-" * 40)
-        print(
-            f"Folder {date_str}: "
-            f"Cropped={cropped_count}, "
-            f"Skipped={skipped_count}"
-        )
+        print(f"{date_str}: cropped={cropped_count}, skipped={skipped_count}")
 
         total_cropped += cropped_count
         total_skipped += skipped_count
 
     print("\n" + "=" * 50)
-    print(
-        f"Done. Total cropped: {total_cropped}, "
-        f"total skipped: {total_skipped}"
-    )
-    print(f"Output: {OUTPUT_DIR}")
+    print(f"Done STRAWBERRY: cropped={total_cropped}, skipped={total_skipped}")
 
+def main():
+
+    if IMAGE_TYPE == "webcam":
+        process_avocado()
+
+    elif IMAGE_TYPE == "frames":
+        process_strawberry()
+
+    else:
+        raise ValueError(f"Unknown IMAGE_TYPE: {IMAGE_TYPE}")
 
 if __name__ == "__main__":
     main()

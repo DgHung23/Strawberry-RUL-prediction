@@ -3,29 +3,41 @@ import cv2
 import glob
 import os
 import re
-
+import json
 import numpy as np
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-processed_root = PROJECT_ROOT / "data" / "02_processed"
-# Default input folder containing cropped raw images and output folder for segmented strawberries.
-# You can still edit these defaults, or pass --input-dir / --output-dir from the command line.
-input_dir = PROJECT_ROOT / "data" / "02_processed" / "cropped_18-03-2026"
-output_dir = PROJECT_ROOT / "data" / "02_processed" / "segmented_18-03-2026"
+CONFIG_FILE = PROJECT_ROOT / "src" / "stage3_preprocessing" / "config.json"
 
-# Define wider color ranges for strawberry candidates in HSV color space.
-# Old/damaged strawberries can shift from bright red to orange/brown with lower brightness.
+with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+    configs = json.load(f)
+
+active_dataset = configs["active_dataset"]
+dataset_cfg = configs["datasets"][active_dataset]
+
+processed_root = PROJECT_ROOT / configs["processed_dir"]
+
+input_dir = PROJECT_ROOT / dataset_cfg["output_dir"]
+output_dir = PROJECT_ROOT / "data" / "02_processed" / dataset_cfg["mask_dir"]
+
+# Define wider color ranges for avocado candidates in HSV color space.
+# Dark green avocado skin can be very deep, with some brown/ripening patches.
 STRAWBERRY_COLOR_RANGES = [
     (np.array([0, 25, 18]), np.array([25, 255, 255])),    # red/dark red/orange
     (np.array([160, 25, 18]), np.array([180, 255, 255])), # wrapped red
     (np.array([5, 20, 15]), np.array([45, 255, 245])),    # brown/damaged fruit
     (np.array([35, 25, 15]), np.array([100, 255, 245])),  # green calyx/leaves
 ]
+AVOCADO_COLOR_RANGES = [
+    (np.array([18, 8, 8]), np.array([95, 255, 255])),      # dark to bright green avocado skin
+    (np.array([0, 15, 12]), np.array([35, 255, 200])),    # brown stem / ripening patches
+]
 
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13))
+avocado_close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (17, 17))
 small_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
 grabcut_outer_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (19, 19))
 
@@ -61,7 +73,7 @@ def should_process_image(path, args):
     stem = os.path.splitext(filename)[0]
     frame_number = extract_frame_number(path)
 
-    if args.only_frame and frame_number not in args.only_frame:
+    if args.only_frame and frame_number is not None and frame_number not in args.only_frame:
         return False
     if args.skip_frame and frame_number in args.skip_frame:
         return False
@@ -76,22 +88,87 @@ def should_process_image(path, args):
     return True
 
 
-def create_strawberry_candidate_mask(hsv):
+def is_table_background(hsv):
+    """Detect the white table surface and the soft grey shadow directly on it."""
+
+    saturation = hsv[:, :, 1].astype(np.int16)
+    value = hsv[:, :, 2].astype(np.int16)
+    table = (saturation >= 10) & (saturation <= 25) & (value >= 130) & (value <= 175)
+    shadow = (saturation >= 5) & (saturation <= 30) & (value >= 85) & (value <= 125)
+    return table | shadow
+
+
+def is_surface_background(hsv):
+    """Detect table, shadow, and neutral gray/white background pixels."""
+
+    saturation = hsv[:, :, 1].astype(np.int16)
+    value = hsv[:, :, 2].astype(np.int16)
+    neutral = (saturation <= 35) & (value >= 85)
+    return neutral | is_table_background(hsv)
+
+
+def is_foreign_foreground(hsv):
+    """Detect non-avocado colors such as pink tray or hand artifacts."""
+
+    hue = hsv[:, :, 0].astype(np.int16)
+    saturation = hsv[:, :, 1].astype(np.int16)
+    return (hue >= 140) & (hue <= 179) & (saturation >= 20)
+
+
+def peel_attached_background(mask, hsv, background_predicate):
+    """Remove foreground pixels matching a predicate and connected to the ROI border."""
+
+    height, width = mask.shape
+    bg_like = background_predicate(hsv)
+    flood = np.zeros((height, width), np.uint8)
+    flood_mask = np.zeros((height + 2, width + 2), np.uint8)
+
+    for x in range(width):
+        for y in (0, height - 1):
+            if mask[y, x] and bg_like[y, x]:
+                cv2.floodFill(flood, flood_mask, (x, y), 255)
+
+    for y in range(height):
+        for x in (0, width - 1):
+            if mask[y, x] and bg_like[y, x]:
+                cv2.floodFill(flood, flood_mask, (x, y), 255)
+
+    cleaned = mask.copy()
+    cleaned[(flood > 0) & (mask > 0)] = 0
+    return cleaned
+
+
+def create_avocado_candidate_mask(hsv):
     mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
+
+    for lower, upper in AVOCADO_COLOR_RANGES:
+        mask = cv2.inRange(hsv, lower, upper) | mask
+
+    mask[is_surface_background(hsv)] = 0
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, avocado_close_kernel)
+    return mask
+
+
+def create_candidate_mask(hsv, dataset="avocado"):
+    if dataset == "avocado":
+        return create_avocado_candidate_mask(hsv)
+
+    mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
+
     for lower, upper in STRAWBERRY_COLOR_RANGES:
-        mask = cv2.bitwise_or(mask, cv2.inRange(hsv, lower, upper))
+        mask = cv2.inRange(hsv, lower, upper) | mask
 
     saturation = hsv[:, :, 1]
     value = hsv[:, :, 2]
-    dark_or_saturated_object = ((saturation > 35) & (value > 18) & (value < 245)).astype('uint8') * 255
-    dark_damaged_object = ((saturation > 15) & (value > 12) & (value < 110)).astype('uint8') * 255
-    mask = cv2.bitwise_or(mask, dark_or_saturated_object)
-    mask = cv2.bitwise_or(mask, dark_damaged_object)
 
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, close_kernel)
-    mask = cv2.dilate(mask, kernel, iterations=1)
-    return mask
+    object_mask = ((saturation > 35) & (value > 18) & (value < 245)).astype('uint8') * 255
+    damaged_mask = ((saturation > 15) & (value > 12) & (value < 110)).astype('uint8') * 255
+
+    mask = cv2.bitwise_or(mask, object_mask)
+    mask = cv2.bitwise_or(mask, damaged_mask)
+
+    return cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
 
 
 def is_valid_strawberry_contour(cnt, img_h, img_w):
@@ -110,6 +187,90 @@ def is_valid_strawberry_contour(cnt, img_h, img_w):
 
     extent = area / float(w_box * h_box)
     return extent > 0.12
+
+
+def is_valid_avocado_contour(cnt, img_h, img_w):
+    area = cv2.contourArea(cnt)
+    min_area = max(8000, int(0.0015 * img_h * img_w))
+    if area < min_area:
+        return False
+
+    x, y, w_box, h_box = cv2.boundingRect(cnt)
+    if w_box < 40 or h_box < 40:
+        return False
+
+    aspect_ratio = w_box / float(h_box)
+    if aspect_ratio < 0.2 or aspect_ratio > 4.0:
+        return False
+
+    extent = area / float(w_box * h_box)
+    return extent > 0.08
+
+
+def fill_holes(binary_mask):
+    flood = binary_mask.copy()
+    flood_mask = np.zeros((binary_mask.shape[0] + 2, binary_mask.shape[1] + 2), dtype=np.uint8)
+    cv2.floodFill(flood, flood_mask, (0, 0), 255)
+    holes = cv2.bitwise_not(flood)
+    return cv2.bitwise_or(binary_mask, holes)
+
+
+def largest_component_mask(mask):
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask, 8)
+    if num_labels <= 1:
+        return mask
+
+    largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
+    return (labels == largest_label).astype('uint8') * 255
+
+
+def create_grabcut_mask_avocado(roi, roi_support):
+    roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    roi_h, roi_w = roi.shape[:2]
+    grabcut_mask = np.full((roi_h, roi_w), cv2.GC_PR_BGD, dtype=np.uint8)
+
+    main_support = largest_component_mask(roi_support)
+    probable_fg = cv2.dilate(main_support, kernel, iterations=3) > 0
+
+    sure_fg = cv2.erode(main_support, small_kernel, iterations=1) > 0
+    sure_bg = cv2.dilate(main_support, grabcut_outer_kernel, iterations=1) == 0
+    table_bg = is_surface_background(roi_hsv)
+
+    dark_skin = (roi_hsv[:, :, 2] < 95) & (roi_hsv[:, :, 1] > 2) & probable_fg
+    specular_skin = (roi_hsv[:, :, 1] <= 12) & (roi_hsv[:, :, 2] >= 45) & probable_fg
+
+    grabcut_mask[probable_fg | dark_skin | specular_skin] = cv2.GC_PR_FGD
+    grabcut_mask[sure_fg] = cv2.GC_FGD
+    grabcut_mask[sure_bg | (table_bg & ~probable_fg)] = cv2.GC_BGD
+
+    grabcut_mask[0, :] = cv2.GC_BGD
+    grabcut_mask[-1, :] = cv2.GC_BGD
+    grabcut_mask[:, 0] = cv2.GC_BGD
+    grabcut_mask[:, -1] = cv2.GC_BGD
+
+    if not np.any((grabcut_mask == cv2.GC_FGD) | (grabcut_mask == cv2.GC_PR_FGD)):
+        grabcut_mask[main_support > 0] = cv2.GC_PR_FGD
+
+    return grabcut_mask
+
+
+def refine_avocado_mask(mask_res, roi, _roi_support):
+    roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+
+    refined = mask_res.copy()
+    refined[is_surface_background(roi_hsv) | is_foreign_foreground(roi_hsv)] = 0
+    refined = peel_attached_background(refined, roi_hsv, is_surface_background)
+    refined = peel_attached_background(refined, roi_hsv, is_foreign_foreground)
+    refined = fill_holes(refined * 255) // 255
+    refined = cv2.erode(refined, small_kernel, iterations=2)
+    refined = cv2.morphologyEx(refined, cv2.MORPH_CLOSE, close_kernel)
+
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(refined, 8)
+    if num_labels <= 1:
+        return refined
+
+    largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
+    return (labels == largest_label).astype('uint8')
 
 
 def create_grabcut_mask(roi, roi_support):
@@ -160,16 +321,27 @@ def apply_mask_to_roi(roi, mask_res):
     return cv2.merge([b_channel, g_channel, r_channel, alpha_channel])
 
 
-def build_mask_output_dir(args):
-    input_folder_name = os.path.basename(os.path.normpath(args.input_dir))
-    output_folder_name = os.path.basename(os.path.normpath(args.output_dir))
 
-    date_match = re.search(r'(\d{2}-\d{2}-\d{4})', input_folder_name)
-    if date_match is None:
-        date_match = re.search(r'(\d{2}-\d{2}-\d{4})', output_folder_name)
 
-    mask_folder_name = f'mask_{date_match.group(1)}' if date_match else 'mask'
-    return os.path.join(os.path.dirname(args.output_dir), mask_folder_name)
+
+def compute_grid_index(cX, cY, img_h, img_w, dataset="avocado"):
+    """Map object center to a 2x3 grid index from 1 to 6."""
+
+    if cX < (img_w / 3):
+        col = 0
+    elif cX < (2 * img_w / 3):
+        col = 1
+    else:
+        col = 2
+
+    if dataset == "avocado":
+        # Bottom row: 1-3, top row: 4-6.
+        row = 0 if cY >= (img_h / 2) else 1
+    else:
+        # Top row: 1-3, bottom row: 4-6.
+        row = 0 if cY < (img_h / 2) else 1
+
+    return (row * 3) + col + 1
 
 
 def parse_args():
@@ -189,14 +361,17 @@ def parse_args():
 def main():
     args = parse_args()
 
-    cropped_folders = sorted(
-        [
+    if active_dataset == "strawberry":
+        cropped_folders = sorted(
+            [
             folder
             for folder in processed_root.iterdir()
             if folder.is_dir()
             and is_cropped_folder(folder.name)
-        ]
-    )
+            ]
+        )
+    else:
+        cropped_folders = [Path(args.input_dir)]
 
     if not cropped_folders:
         print("No cropped folders found.")
@@ -204,29 +379,39 @@ def main():
 
     for current_input_dir in cropped_folders:
 
-        date_str = current_input_dir.name.replace(
-            "cropped_",
-            ""
-        )
+        if active_dataset == "strawberry":
 
-        current_output_dir = (
-            processed_root /
-            f"segmented_{date_str}"
-        )
+            date_str = current_input_dir.name.replace("cropped_", "")
 
+            current_output_dir = (processed_root / f"segmented_{date_str}")
+
+            mask_output_dir = (processed_root / f"mask_{date_str}")
+
+        else:
+            date_str = active_dataset
+            
+            current_output_dir = (processed_root / f"segmented_{active_dataset}")
+
+            mask_output_dir = (processed_root / f"mask_{active_dataset}")
+
+        
+        
         os.makedirs(current_output_dir, exist_ok=True)
+        
+        os.makedirs(mask_output_dir, exist_ok=True)
 
         temp_args = argparse.Namespace(**vars(args))
 
         temp_args.input_dir = str(current_input_dir)
         temp_args.output_dir = str(current_output_dir)
 
-        mask_output_dir = build_mask_output_dir(temp_args)
-
         os.makedirs(mask_output_dir, exist_ok=True)
 
         print("\n" + "=" * 60)
-        print(f"Processing date: {date_str}")
+        if active_dataset == "strawberry":
+            print(f"Processing date: {date_str}")
+        else:
+            print(f"Processing dataset: {active_dataset}")
         print("=" * 60)
 
         image_paths = sorted(
@@ -253,9 +438,10 @@ def main():
             base_name = os.path.splitext(os.path.basename(img_path))[0]
 
             if not args.keep_existing:
-                for old_output_path in glob.glob(os.path.join(temp_args.output_dir, f'{base_name}_strawberry_*.png')):
+                object_label = active_dataset
+                for old_output_path in glob.glob(os.path.join(temp_args.output_dir, f'{base_name}_{object_label}_*.png')):
                     os.remove(old_output_path)
-                for old_mask_path in glob.glob(os.path.join(mask_output_dir, f'{base_name}_strawberry_*_mask.png')):
+                for old_mask_path in glob.glob(os.path.join(mask_output_dir, f'{base_name}_{object_label}_*_mask.png')):
                     os.remove(old_mask_path)
 
             img = cv2.imread(img_path)
@@ -267,10 +453,13 @@ def main():
             print(f'--- Processing image, pls wait: {base_name} ({w}x{h}) ---')
 
             hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-            thresh = create_strawberry_candidate_mask(hsv)
+            thresh = create_candidate_mask(hsv, dataset=active_dataset)
 
             contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            contours = [cnt for cnt in contours if is_valid_strawberry_contour(cnt, h, w)]
+            if active_dataset == "avocado":
+                contours = [cnt for cnt in contours if is_valid_avocado_contour(cnt, h, w)]
+            else:
+                contours = [cnt for cnt in contours if is_valid_strawberry_contour(cnt, h, w)]
             contours = sorted(contours, key=lambda cnt: (cv2.boundingRect(cnt)[1], cv2.boundingRect(cnt)[0]))
             
             segmented_count = 0
@@ -284,27 +473,7 @@ def main():
                 cX = int(M["m10"] / M["m00"])
                 cY = int(M["m01"] / M["m00"])
 
-                # positioning rows and columns based on the image area 
-                if cY < (h / 2):
-                    row = 0
-                else:
-                    row = 1
-
-                if cX < (w / 3):
-                    col = 0
-                elif cX < (2 * w / 3):
-                    col = 1
-                else:
-                    col = 2
-
-                # caculate strawberry index based on row and column, for example:
-                # row 0, col 0 -> strawberry_idx = 1
-                # row 0, col 1 -> strawberry_idx = 2
-                # row 0, col 2 -> strawberry_idx = 3
-                # row 1, col 0 -> strawberry_idx = 4
-                # row 1, col 1 -> strawberry_idx = 5
-                # row 1, col 2 -> strawberry_idx = 6
-                strawberry_idx = (row * 3) + col + 1
+                strawberry_idx = compute_grid_index(cX, cY, h, w, dataset=active_dataset)
 
                 # crop the strawberry with some padding around the bounding box of the contour
                 x, y, w_box, h_box = cv2.boundingRect(cnt)
@@ -318,27 +487,37 @@ def main():
                 roi = img[y_start:y_end, x_start:x_end]
                 roi_color_support = thresh[y_start:y_end, x_start:x_end]
 
-                mask = create_grabcut_mask(roi, roi_color_support)
+                if active_dataset == "avocado":
+                    mask = create_grabcut_mask_avocado(roi, roi_color_support)
+                    grabcut_iters = 8
+                else:
+                    mask = create_grabcut_mask(roi, roi_color_support)
+                    grabcut_iters = 5
+
                 bgdModel = np.zeros((1, 65), np.float64)
                 fgdModel = np.zeros((1, 65), np.float64)
 
-                cv2.grabCut(roi, mask, None, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_MASK)
+                cv2.grabCut(roi, mask, None, bgdModel, fgdModel, grabcut_iters, cv2.GC_INIT_WITH_MASK)
 
                 mask_res = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
-                mask_res = refine_foreground_mask(mask_res, roi_color_support, roi)
+                if active_dataset == "avocado":
+                    mask_res = refine_avocado_mask(mask_res, roi, roi_color_support)
+                else:
+                    mask_res = refine_foreground_mask(mask_res, roi_color_support, roi)
                 if np.count_nonzero(mask_res) < max(200, int(0.0002 * h * w)):
                     continue
 
                 strawberry_transparent = apply_mask_to_roi(roi, mask_res)
+                object_label = active_dataset
 
-                output_filename = f'{base_name}_strawberry_{strawberry_idx}.png'
+                output_filename = (f'{base_name}_{object_label}_{strawberry_idx}.png')   
                 output_path = os.path.join(temp_args.output_dir, output_filename)
                 cv2.imwrite(output_path, strawberry_transparent)
 
                 full_size_mask = np.zeros((h, w), dtype=np.uint8)
                 full_size_mask[y_start:y_end, x_start:x_end] = mask_res * 255
 
-                mask_filename = f'{base_name}_strawberry_{strawberry_idx}_mask.png'
+                mask_filename = f'{base_name}_{object_label}_{strawberry_idx}_mask.png'
                 mask_path = os.path.join(mask_output_dir, mask_filename)
                 cv2.imwrite(mask_path, full_size_mask)
                 

@@ -15,17 +15,33 @@ import csv
 import re
 from dataclasses import dataclass
 from pathlib import Path
-
+import json
 import cv2
 import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+CONFIG_FILE = PROJECT_ROOT / "src" / "stage3_preprocessing" / "config.json"
+
+with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+    configs = json.load(f)
+
+
+
+active_dataset = configs["active_dataset"]
+config = configs["datasets"][active_dataset]
+
+print("RAW DATASET =", configs["datasets"]["avocado"])
+print("HAS frame_diff =", "frame_diff" in configs["datasets"]["avocado"])
+print("CONFIG ID =", id(configs["datasets"]["avocado"]))
+
+if "frame_diff" not in config:
+    raise ValueError("Missing frame_diff config for dataset")
 # Image formats accepted when scanning the input folder.
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 
 # Default paths for running the script on this project's sample_data.
 # For other datasets, pass --input-dir, --mask-dir, and --output-csv from the command line.
-DEFAULT_INPUT_DIR = PROJECT_ROOT / "data" / "02_processed" / "cropped_18-03-2026"
+DEFAULT_INPUT_DIR = PROJECT_ROOT / configs["datasets"][active_dataset]["output_dir"]
 
 # 
 DEFAULT_MASK_DIR = PROJECT_ROOT / "data" / "02_processed" / "segmented_18-03-2026"
@@ -42,6 +58,13 @@ STRAWBERRY_COLOR_RANGES = [
     (np.array([160, 25, 18]), np.array([180, 255, 255])),
     (np.array([5, 20, 15]), np.array([45, 255, 245])),
     (np.array([35, 25, 15]), np.array([100, 255, 245])),
+]
+
+# avocado color range
+AVOCADO_COLOR_RANGES = [
+    (np.array([25, 40, 10]), np.array([85, 255, 220])),    # dark to medium green avocado skin
+    (np.array([0, 30, 10]), np.array([40, 255, 180])),     # brown / ripening spots and edges
+    (np.array([15, 30, 20]), np.array([60, 255, 255])),    # olive-yellow transition areas
 ]
 
 # Morphology kernels remove small noise and fill small gaps in motion/mask regions.
@@ -276,7 +299,10 @@ def create_fruit_color_mask(bgr_image):
 
     hsv = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2HSV)
     mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
-    for lower, upper in STRAWBERRY_COLOR_RANGES:
+    
+    # CHANGE "AVOCADO_COLOR_RANGES" IF U WANT PREPROCESS AVOCADO
+    # CHANGE "STRAWBERRY_COLOR_RANGES" IF U WANT PREPROCESS STRAWBERRY
+    for lower, upper in AVOCADO_COLOR_RANGES:
         mask = cv2.bitwise_or(mask, cv2.inRange(hsv, lower, upper))
 
     saturation = hsv[:, :, 1]
@@ -652,7 +678,7 @@ def main():
     """Entry point when running: python frame_differencing.py ..."""
 
     args = parse_args()
-    processed_root = PROJECT_ROOT / "data" / "02_processed"
+    processed_root = PROJECT_ROOT / config.get("processed_dir", "data/02_processed")
 
     cropped_folders = sorted(
     [
@@ -673,7 +699,8 @@ def main():
     
     for input_dir in cropped_folders:
         date_str = input_dir.name.replace("cropped_", "")
-        mask_dir = processed_root / f"segmented_{date_str}"
+        # mask_prefix = frame_diff_cfg.get("mask_prefix", "segmented")
+        mask_dir = processed_root / config["mask_dir"]
         result_dir = processed_root / f"frame_differencing_results_{date_str}"
         output_csv = result_dir / f"frame_differencing_report_{date_str}.csv"
         debug_dir = result_dir / "motion_masks"
@@ -720,8 +747,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-

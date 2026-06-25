@@ -7,43 +7,70 @@ import re
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
+CONFIG_FILE = (
+    PROJECT_ROOT
+    / "src"
+    / "stage3_preprocessing"
+    / "config.json"
+)
+
+with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+    configs = json.load(f)
+
+active_dataset = configs["active_dataset"]
+dataset_cfg = configs["datasets"][active_dataset]
+
 ROOT_DIR = PROJECT_ROOT / "data" / "02_processed"
-MANIFEST_DIR = ROOT_DIR / "manifests"
+MANIFEST_DIR = ROOT_DIR / "manifests" / active_dataset
 
 
 MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
 
-FRUIT_TYPE = "strawberry"
-EXPERIMENT_ID = "strawberry_experiment"
+FRUIT_TYPE = active_dataset
+EXPERIMENT_ID = f"{active_dataset}_experiment"
 
 
 
 def parse_datetime(date_str: str, filename: str):
-    """
-    assigned_18-03-2026
-    frame-1_12-26-28_F01.png
 
-    -> 2026-03-18 12:26:28
-    """
+    if active_dataset == "strawberry":
 
-    match = re.search(
-        r"frame-\d+_(\d{2})-(\d{2})-(\d{2})",
-        filename
-    )
-
-    if not match:
-        raise ValueError(
-            f"Cannot parse time from {filename}"
+        match = re.search(
+            r"frame-\d+_(\d{2})-(\d{2})-(\d{2})",
+            filename
         )
 
-    hh, mm, ss = match.groups()
+        if not match:
+            raise ValueError(
+                f"Cannot parse time from {filename}"
+            )
 
-    dt = datetime.strptime(
-        f"{date_str} {hh}:{mm}:{ss}",
-        "%d-%m-%Y %H:%M:%S"
-    )
+        hh, mm, ss = match.groups()
 
-    return dt
+        return datetime.strptime(
+            f"{date_str} {hh}:{mm}:{ss}",
+            "%d-%m-%Y %H:%M:%S"
+        )
+
+    else:
+
+        match = re.search(
+            r"webcam_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})",
+            filename
+        )
+
+        if not match:
+            raise ValueError(
+                f"Cannot parse time from {filename}"
+            )
+
+        date_part = match.group(1)
+        time_part = match.group(2)
+
+        return datetime.strptime(
+            f"{date_part} {time_part}",
+            "%Y-%m-%d %H-%M-%S"
+        )
 
 
 def extract_frame_base(filename: str):
@@ -72,7 +99,7 @@ def fruit_to_mask_name(frame_base, fruit_id):
     fruit_num = int(fruit_id.replace("F", ""))
 
     return (
-        f"{frame_base}_strawberry_{fruit_num}_mask.png"
+        f"{frame_base}_{active_dataset}_{fruit_num}_mask.png"
     )
 
 
@@ -158,19 +185,35 @@ def main():
 
     fruit_sequence = {}
 
-    assigned_folders = sorted(
-        ROOT_DIR.glob("assigned_*")
-    )
+    if active_dataset == "strawberry":
+
+        assigned_folders = sorted(ROOT_DIR.glob("assigned_*"))
+
+        assigned_folders = [
+        p for p in assigned_folders
+        if re.match(
+            r"assigned_\d{2}-\d{2}-\d{4}",
+            p.name
+            )
+        ]
+
+    else:
+        assigned_folders = [ROOT_DIR / f"assigned_{active_dataset}"]
 
 
     for assigned_dir in assigned_folders:
 
-        date_str = assigned_dir.name.replace(
-            "assigned_",
-            ""
-        )
+        if active_dataset == "strawberry":
+            date_str = assigned_dir.name.replace("assigned_", "")
 
-        mask_dir = ROOT_DIR / f"mask_{date_str}"
+        else:
+            date_str = active_dataset
+
+        if active_dataset == "strawberry":
+            mask_dir = ROOT_DIR / f"mask_{date_str}"
+
+        else:
+            mask_dir = ROOT_DIR / f"mask_{active_dataset}"
 
         fruit_dirs = sorted(
             [
@@ -186,15 +229,30 @@ def main():
             if fruit_id not in fruit_sequence:
                 fruit_sequence[fruit_id] = 0
 
-            image_files = sorted(
-                fruit_dir.glob("*.png"),
-                key=lambda x: int(
-                    re.search(
-                        r"frame-(\d+)",
-                        x.name
-                    ).group(1)
+            if active_dataset == "strawberry":
+
+                image_files = sorted(
+                    fruit_dir.glob("*.png"),
+                    key=lambda x: int(
+                        re.search(
+                            r"frame-(\d+)",
+                            x.name
+                        ).group(1)
+                    )
                 )
-            )
+
+            else:
+
+                image_files = sorted(
+                    fruit_dir.glob("*.png"),
+                    key=lambda x: datetime.strptime(
+                        re.search(
+                            r"webcam_(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2})",
+                            x.name
+                        ).group(0),
+                        "webcam_%Y-%m-%d_%H-%M-%S"
+                    )
+                )
         
 
             for image_path in image_files:

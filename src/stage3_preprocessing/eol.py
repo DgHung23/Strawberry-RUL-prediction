@@ -1,68 +1,17 @@
 from pathlib import Path
 import pandas as pd
+import json
 
 
-def create_eol_anchors(output_csv: Path):
+def create_eol_anchors(output_csv: Path, active_dataset: str):
 
-    data = [
+    data = []
+    for i in range (1, 7):
+            
+        data.append(
         {
-            "experiment_id": "strawberry_experiment",
-            "fruit_id": "F01",
-            "eol_timestamp": "2026-03-26 08:00:00",
-            "eol_basis": "visual",
-            "proposed_by": "cong",
-            "reviewed_by": "",
-            "approved_by": "",
-            "status": "approved",
-            "notes": "End of life"
-        },
-        {
-            "experiment_id": "strawberry_experiment",
-            "fruit_id": "F02",
-            "eol_timestamp": "2026-03-28 08:00:00",
-            "eol_basis": "visual",
-            "proposed_by": "cong",
-            "reviewed_by": "",
-            "approved_by": "",
-            "status": "approved",
-            "notes": "End of life"
-        },
-        {
-            "experiment_id": "strawberry_experiment",
-            "fruit_id": "F03",
-            "eol_timestamp": "2026-03-26 08:00:00",
-            "eol_basis": "visual",
-            "proposed_by": "cong",
-            "reviewed_by": "",
-            "approved_by": "",
-            "status": "approved",
-            "notes": "End of life"
-        },
-        {
-            "experiment_id": "strawberry_experiment",
-            "fruit_id": "F04",
-            "eol_timestamp": "2026-03-26 08:00:00",
-            "eol_basis": "visual",
-            "proposed_by": "cong",
-            "reviewed_by": "",
-            "approved_by": "",
-            "status": "approved",
-            "notes": "End of life"
-        },
-        {
-            "experiment_id": "strawberry_experiment",
-            "fruit_id": "F05",
-            "eol_timestamp": "2026-03-28 08:00:00",
-            "eol_basis": "visual",
-            "proposed_by": "cong",
-            "reviewed_by": "",
-            "approved_by": "",
-            "status": "approved",
-            "notes": "End of life"
-        },
-        {
-            "experiment_id": "strawberry_experiment",
-            "fruit_id": "F06",
+            "experiment_id": f"{active_dataset}_experiment",
+            "fruit_id": f"F{i:02d}",
             "eol_timestamp": "2026-03-26 08:00:00",
             "eol_basis": "visual",
             "proposed_by": "cong",
@@ -71,7 +20,8 @@ def create_eol_anchors(output_csv: Path):
             "status": "approved",
             "notes": "End of life"
         }
-    ]
+            )
+    
 
     df = pd.DataFrame(data)
 
@@ -92,16 +42,29 @@ def create_eol_anchors(output_csv: Path):
 def main():
 
     PROJECT_ROOT = Path(__file__).resolve().parents[2]
+    
+    CONFIG_FILE = (
+    PROJECT_ROOT
+    / "src"
+    / "stage3_preprocessing"
+    / "config.json"
+    )
+
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        configs = json.load(f)
+
+    active_dataset = configs["active_dataset"]
 
     output_csv = (
         PROJECT_ROOT
         / "data"
         / "02_processed"
         / "manifests"
+        / active_dataset
         / "eol_anchors.csv"
     )
 
-    create_eol_anchors(output_csv)
+    create_eol_anchors(output_csv, active_dataset)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+import json
 
 
 def generate_labels(
@@ -135,12 +136,25 @@ def generate_labels(
 def main():
 
     PROJECT_ROOT = Path(__file__).resolve().parents[2]
+    
+    CONFIG_FILE = (
+    PROJECT_ROOT
+    / "src"
+    / "stage3_preprocessing"
+    / "config.json"
+    )
+
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        configs = json.load(f)
+
+    active_dataset = configs["active_dataset"]
 
     MANIFEST_DIR = (
         PROJECT_ROOT
         / "data"
         / "02_processed"
         / "manifests"
+        / active_dataset
     )
 
     frame_manifest = (
