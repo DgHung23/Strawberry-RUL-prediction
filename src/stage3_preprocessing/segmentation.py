@@ -344,6 +344,52 @@ def compute_grid_index(cX, cY, img_h, img_w, dataset="avocado"):
     return (row * 3) + col + 1
 
 
+def apply_grayworld(image):
+    try:
+        b, g, r = cv2.split(image)
+        b_mean, g_mean, r_mean = np.mean(b), np.mean(g), np.mean(r)
+        if b_mean == 0 or g_mean == 0 or r_mean == 0:
+            return image
+        avg_mean = (b_mean + g_mean + r_mean) / 3.0
+        b_scaled = b * (avg_mean / b_mean)
+        g_scaled = g * (avg_mean / g_mean)
+        r_scaled = r * (avg_mean / r_mean)
+        return np.clip(cv2.merge((b_scaled.astype(np.float32), g_scaled.astype(np.float32), r_scaled.astype(np.float32))), 0, 255).astype(np.uint8)
+    except Exception:
+        return image
+
+
+def apply_clahe_lab(image, clip_limit=2.0, grid_size=(5, 5)):
+    try:
+        lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=grid_size)
+        l_clahe = clahe.apply(l)
+        return cv2.cvtColor(cv2.merge((l_clahe, a, b)), cv2.COLOR_LAB2BGR)
+    except Exception:
+        return image
+
+
+AVOCADO_CELLS = {
+    1: [200,  450,  750,  1080],
+    2: [750,  450,  1300, 1080],
+    3: [1300, 450,  1920, 1080],
+    4: [0,    0,    750,  650],
+    5: [700,  0,    1350, 650],
+    6: [1300, 0,    1920, 650]
+}
+
+
+STRAWBERRY_CELLS = {
+    1: [150, 100, 480, 450],
+    2: [700, 100, 1050, 450],
+    3: [1300, 100, 1650, 450],
+    4: [80, 550, 420, 950],
+    5: [700, 550, 1050, 950],
+    6: [1350, 550, 1700, 950]
+}
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Segment strawberries from a selected frame range.')
     parser.add_argument('--input-dir', default=input_dir, help='Folder containing cropped input images.')
@@ -377,35 +423,25 @@ def main():
         print("No cropped folders found.")
         return
 
+    cells_dict = AVOCADO_CELLS if active_dataset == "avocado" else STRAWBERRY_CELLS
+
     for current_input_dir in cropped_folders:
 
         if active_dataset == "strawberry":
-
             date_str = current_input_dir.name.replace("cropped_", "")
-
             current_output_dir = (processed_root / f"segmented_{date_str}")
-
             mask_output_dir = (processed_root / f"mask_{date_str}")
-
         else:
             date_str = active_dataset
-            
             current_output_dir = (processed_root / f"segmented_{active_dataset}")
-
             mask_output_dir = (processed_root / f"mask_{active_dataset}")
 
-        
-        
         os.makedirs(current_output_dir, exist_ok=True)
-        
         os.makedirs(mask_output_dir, exist_ok=True)
 
         temp_args = argparse.Namespace(**vars(args))
-
         temp_args.input_dir = str(current_input_dir)
         temp_args.output_dir = str(current_output_dir)
-
-        os.makedirs(mask_output_dir, exist_ok=True)
 
         print("\n" + "=" * 60)
         if active_dataset == "strawberry":
@@ -413,6 +449,23 @@ def main():
         else:
             print(f"Processing dataset: {active_dataset}")
         print("=" * 60)
+
+        # Load CSV report
+        csv_path = processed_root / f"frame_differencing_results_{date_str}" / f"frame_differencing_report_{date_str}.csv"
+        regenerate_mask_map = {}
+        if csv_path.exists():
+            import csv
+            with open(csv_path, "r", encoding="utf-8") as csv_file:
+                reader = csv.DictReader(csv_file)
+                for row in reader:
+                    frame_path = row.get("frame_path", "")
+                    regen_str = row.get("regenerate_mask", "true")
+                    if frame_path:
+                        filename = os.path.basename(frame_path)
+                        regenerate_mask_map[filename] = (regen_str.lower() == "true")
+            print(f"Loaded frame differencing report from: {csv_path}")
+        else:
+            print(f"Warning: CSV report not found at {csv_path}. Defaulting to regenerate_mask = True for all frames.")
 
         image_paths = sorted(
             glob.glob(
@@ -434,15 +487,23 @@ def main():
             print(f'Frame filter: start={args.start_frame}, end={args.end_frame}, only={args.only_frame}, skip={args.skip_frame}')
         print()
 
-        for img_path in image_paths:
+        for idx_frame, img_path in enumerate(image_paths):
             base_name = os.path.splitext(os.path.basename(img_path))[0]
+            current_filename = os.path.basename(img_path)
+            prev_img_path = image_paths[idx_frame - 1] if idx_frame > 0 else None
 
             if not args.keep_existing:
                 object_label = active_dataset
                 for old_output_path in glob.glob(os.path.join(temp_args.output_dir, f'{base_name}_{object_label}_*.png')):
-                    os.remove(old_output_path)
+                    try:
+                        os.remove(old_output_path)
+                    except OSError:
+                        pass
                 for old_mask_path in glob.glob(os.path.join(mask_output_dir, f'{base_name}_{object_label}_*_mask.png')):
-                    os.remove(old_mask_path)
+                    try:
+                        os.remove(old_mask_path)
+                    except OSError:
+                        pass
 
             img = cv2.imread(img_path)
             if img is None:
@@ -450,81 +511,153 @@ def main():
                 continue
 
             h, w = img.shape[:2]
-            print(f'--- Processing image, pls wait: {base_name} ({w}x{h}) ---')
+            print(f'--- Processing image: {base_name} ({w}x{h}) ---')
 
-            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-            thresh = create_candidate_mask(hsv, dataset=active_dataset)
+            # Check if this frame needs mask regeneration
+            regen_frame = regenerate_mask_map.get(current_filename, True)
+            if idx_frame == 0 or prev_img_path is None:
+                regen_frame = True
 
-            contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            if active_dataset == "avocado":
-                contours = [cnt for cnt in contours if is_valid_avocado_contour(cnt, h, w)]
-            else:
-                contours = [cnt for cnt in contours if is_valid_strawberry_contour(cnt, h, w)]
-            contours = sorted(contours, key=lambda cnt: (cv2.boundingRect(cnt)[1], cv2.boundingRect(cnt)[0]))
-            
+            print(f'    CSV regenerate_mask decision: {regen_frame}')
+
             segmented_count = 0
 
-        
-            for cnt in contours:
-                # calculate contour center
-                M = cv2.moments(cnt)
-                if M["m00"] == 0:
-                    continue
-                cX = int(M["m10"] / M["m00"])
-                cY = int(M["m01"] / M["m00"])
+            if regen_frame:
+                # Case 1: Chạy Candidate Mask -> GrabCut (segment) -> lưu mask mới
+                hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+                thresh = create_candidate_mask(hsv, dataset=active_dataset)
 
-                strawberry_idx = compute_grid_index(cX, cY, h, w, dataset=active_dataset)
-
-                # crop the strawberry with some padding around the bounding box of the contour
-                x, y, w_box, h_box = cv2.boundingRect(cnt)
-
-                pad = 20
-                x_start = max(0, x - pad)
-                y_start = max(0, y - pad)
-                x_end = min(w, x + w_box + pad)
-                y_end = min(h, y + h_box + pad)
-
-                roi = img[y_start:y_end, x_start:x_end]
-                roi_color_support = thresh[y_start:y_end, x_start:x_end]
-
+                contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 if active_dataset == "avocado":
-                    mask = create_grabcut_mask_avocado(roi, roi_color_support)
-                    grabcut_iters = 8
+                    contours = [cnt for cnt in contours if is_valid_avocado_contour(cnt, h, w)]
                 else:
-                    mask = create_grabcut_mask(roi, roi_color_support)
-                    grabcut_iters = 5
+                    contours = [cnt for cnt in contours if is_valid_strawberry_contour(cnt, h, w)]
+                contours = sorted(contours, key=lambda cnt: (cv2.boundingRect(cnt)[1], cv2.boundingRect(cnt)[0]))
 
-                bgdModel = np.zeros((1, 65), np.float64)
-                fgdModel = np.zeros((1, 65), np.float64)
+                for cnt in contours:
+                    M = cv2.moments(cnt)
+                    if M["m00"] == 0:
+                        continue
+                    cX = int(M["m10"] / M["m00"])
+                    cY = int(M["m01"] / M["m00"])
 
-                cv2.grabCut(roi, mask, None, bgdModel, fgdModel, grabcut_iters, cv2.GC_INIT_WITH_MASK)
+                    fruit_idx = compute_grid_index(cX, cY, h, w, dataset=active_dataset)
 
-                mask_res = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
-                if active_dataset == "avocado":
-                    mask_res = refine_avocado_mask(mask_res, roi, roi_color_support)
-                else:
-                    mask_res = refine_foreground_mask(mask_res, roi_color_support, roi)
-                if np.count_nonzero(mask_res) < max(200, int(0.0002 * h * w)):
-                    continue
+                    x, y, w_box, h_box = cv2.boundingRect(cnt)
+                    pad = 20
+                    x_start = max(0, x - pad)
+                    y_start = max(0, y - pad)
+                    x_end = min(w, x + w_box + pad)
+                    y_end = min(h, y + h_box + pad)
 
-                strawberry_transparent = apply_mask_to_roi(roi, mask_res)
-                object_label = active_dataset
+                    roi = img[y_start:y_end, x_start:x_end]
+                    roi_color_support = thresh[y_start:y_end, x_start:x_end]
 
-                output_filename = (f'{base_name}_{object_label}_{strawberry_idx}.png')   
-                output_path = os.path.join(temp_args.output_dir, output_filename)
-                cv2.imwrite(output_path, strawberry_transparent)
+                    if active_dataset == "avocado":
+                        mask = create_grabcut_mask_avocado(roi, roi_color_support)
+                        grabcut_iters = 8
+                    else:
+                        mask = create_grabcut_mask(roi, roi_color_support)
+                        grabcut_iters = 5
 
-                full_size_mask = np.zeros((h, w), dtype=np.uint8)
-                full_size_mask[y_start:y_end, x_start:x_end] = mask_res * 255
+                    bgdModel = np.zeros((1, 65), np.float64)
+                    fgdModel = np.zeros((1, 65), np.float64)
 
-                mask_filename = f'{base_name}_{object_label}_{strawberry_idx}_mask.png'
-                mask_path = os.path.join(mask_output_dir, mask_filename)
-                cv2.imwrite(mask_path, full_size_mask)
-                
-                segmented_count += 1
-            
+                    cv2.grabCut(roi, mask, None, bgdModel, fgdModel, grabcut_iters, cv2.GC_INIT_WITH_MASK)
 
-            print(f'-> Done {base_name}: segmented {segmented_count} strawberries <-\n')
+                    mask_res = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
+                    if active_dataset == "avocado":
+                        mask_res = refine_avocado_mask(mask_res, roi, roi_color_support)
+                    else:
+                        mask_res = refine_foreground_mask(mask_res, roi_color_support, roi)
+
+                    if np.count_nonzero(mask_res) < max(200, int(0.0002 * h * w)):
+                        continue
+
+                    # Smooth mask border
+                    clean_mask = mask_res * 255
+                    blurred = cv2.GaussianBlur(clean_mask, (15, 15), 0)
+                    final_mask = np.where(blurred > 127, 255, 0).astype(np.uint8)
+
+                    # Save full-size mask
+                    full_size_mask = np.zeros((h, w), dtype=np.uint8)
+                    full_size_mask[y_start:y_end, x_start:x_end] = final_mask
+                    
+                    mask_filename = f'{base_name}_{object_label}_{fruit_idx}_mask.png'
+                    mask_path = os.path.join(mask_output_dir, mask_filename)
+                    cv2.imwrite(mask_path, full_size_mask)
+
+                    # Save transparent fruit crop
+                    b_channel, g_channel, r_channel = cv2.split(roi)
+                    roi_transparent = cv2.merge([b_channel, g_channel, r_channel, final_mask])
+                    
+                    output_filename = f'{base_name}_{object_label}_{fruit_idx}.png'
+                    output_path = os.path.join(temp_args.output_dir, output_filename)
+                    cv2.imwrite(output_path, roi_transparent)
+
+                    segmented_count += 1
+            else:
+                # Case 2: Chạy Local GrabCut (segment) -> lưu mask mới
+                for idx in range(1, 7):
+                    x1, y1, x2, y2 = cells_dict[idx]
+                    roi = img[y1:y2, x1:x2]
+
+                    # Preprocess for contrast
+                    gw = apply_grayworld(roi)
+                    preproc = apply_clahe_lab(gw)
+
+                    roi_h, roi_w = roi.shape[:2]
+                    mask = np.zeros((roi_h, roi_w), np.uint8)
+                    bgdModel = np.zeros((1, 65), np.float64)
+                    fgdModel = np.zeros((1, 65), np.float64)
+
+                    # Rect margin inside compartment
+                    margin = 25
+                    rect = (margin, margin, roi_w - 2 * margin, roi_h - 2 * margin)
+
+                    # Execute local GrabCut
+                    cv2.grabCut(preproc, mask, rect, bgdModel, fgdModel, 6, cv2.GC_INIT_WITH_RECT)
+
+                    # Get binary mask
+                    binary_mask = np.where((mask == 1) | (mask == 3), 255, 0).astype('uint8')
+
+                    # Clean mask: Keep largest component
+                    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                    if contours:
+                        largest_contour = max(contours, key=cv2.contourArea)
+                        clean_mask = np.zeros_like(binary_mask)
+                        cv2.drawContours(clean_mask, [largest_contour], -1, 255, thickness=cv2.FILLED)
+                    else:
+                        clean_mask = binary_mask.copy()
+
+                    # Morphological clean
+                    kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+                    clean_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_CLOSE, kernel_ellipse)
+                    clean_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_OPEN, kernel_ellipse)
+
+                    # Blur and threshold for smooth border
+                    blurred = cv2.GaussianBlur(clean_mask, (15, 15), 0)
+                    final_mask = np.where(blurred > 127, 255, 0).astype(np.uint8)
+
+                    # Save full-size mask
+                    full_size_mask = np.zeros((h, w), dtype=np.uint8)
+                    full_size_mask[y1:y2, x1:x2] = final_mask
+                    
+                    mask_filename = f'{base_name}_{object_label}_{idx}_mask.png'
+                    mask_path = os.path.join(mask_output_dir, mask_filename)
+                    cv2.imwrite(mask_path, full_size_mask)
+
+                    # Save transparent fruit crop
+                    b_channel, g_channel, r_channel = cv2.split(roi)
+                    roi_transparent = cv2.merge([b_channel, g_channel, r_channel, final_mask])
+                    
+                    output_filename = f'{base_name}_{object_label}_{idx}.png'
+                    output_path = os.path.join(temp_args.output_dir, output_filename)
+                    cv2.imwrite(output_path, roi_transparent)
+
+                    segmented_count += 1
+
+            print(f'-> Done {base_name}: processed {segmented_count} fruits <-\n')
 
         print('=' * 40)
         print(f'Done segmentation for {date_str}')

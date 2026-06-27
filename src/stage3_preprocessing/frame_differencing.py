@@ -45,7 +45,6 @@ DEFAULT_INPUT_DIR = PROJECT_ROOT / configs["datasets"][active_dataset]["output_d
 
 # 
 DEFAULT_MASK_DIR = PROJECT_ROOT / "data" / "02_processed" / "segmented_18-03-2026"
-
 DEFAULT_RESULT_DIR = PROJECT_ROOT / "data" / "02_processed" / "frame_differencing_results_18-03-2026"
 DEFAULT_OUTPUT_CSV = DEFAULT_RESULT_DIR / "frame_differencing_report_18-03-2026.csv"
 DEFAULT_DEBUG_DIR = DEFAULT_RESULT_DIR / "motion_masks"
@@ -300,9 +299,8 @@ def create_fruit_color_mask(bgr_image):
     hsv = cv2.cvtColor(bgr_image, cv2.COLOR_BGR2HSV)
     mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
     
-    # CHANGE "AVOCADO_COLOR_RANGES" IF U WANT PREPROCESS AVOCADO
-    # CHANGE "STRAWBERRY_COLOR_RANGES" IF U WANT PREPROCESS STRAWBERRY
-    for lower, upper in AVOCADO_COLOR_RANGES:
+    ranges = AVOCADO_COLOR_RANGES if active_dataset == "avocado" else STRAWBERRY_COLOR_RANGES
+    for lower, upper in ranges:
         mask = cv2.bitwise_or(mask, cv2.inRange(hsv, lower, upper))
 
     saturation = hsv[:, :, 1]
@@ -680,14 +678,24 @@ def main():
     args = parse_args()
     processed_root = PROJECT_ROOT / config.get("processed_dir", "data/02_processed")
 
-    cropped_folders = sorted(
-    [
-        folder
-        for folder in processed_root.iterdir()
-        if folder.is_dir()
-        and folder.name.startswith("cropped_")
-    ]
-    )
+    if active_dataset == "strawberry":
+        cropped_folders = sorted(
+            [
+                folder
+                for folder in processed_root.iterdir()
+                if folder.is_dir()
+                and re.match(r"^cropped_\d{2}-\d{2}-\d{4}$", folder.name) is not None
+            ]
+        )
+    else:
+        cropped_folders = sorted(
+            [
+                folder
+                for folder in processed_root.iterdir()
+                if folder.is_dir()
+                and folder.name == "cropped_avocado"
+            ]
+        )
 
     if not cropped_folders:
         print(f"No cropped folders found in: {processed_root}")
