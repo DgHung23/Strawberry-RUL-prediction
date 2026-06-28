@@ -374,7 +374,69 @@ python src/stage3_preprocessing/crop_images.py
 
 ---
 
-### Step 2: Segmentation
+### Step 2: Frame differencing
+
+```bash
+python src/stage3_preprocessing/frame_differencing.py
+```
+
+For avocado, also set the mask folder:
+
+```bash
+python src/stage3_preprocessing/frame_differencing.py 
+```
+
+**Purpose**
+
+- Compares each frame with the previous frame (or last stable frame).
+- Computes motion ratio and flags frames that likely need a new mask.
+- Validates existing segmented PNGs (alpha size, fruit color, border contact).
+- Writes a CSV report plus optional debug images.
+
+**Input**
+
+All folders under `data/02_processed/` whose names start with `cropped_`:
+
+```text
+cropped_18-03-2026/
+cropped_19-03-2026/
+cropped_avocado/
+```
+
+**Output** (one result folder per cropped input folder)
+
+```text
+frame_differencing_results_{date_or_name}/
+    frame_differencing_report_{date_or_name}.csv
+    motion_masks/
+    motion_overlays/
+```
+
+**Key CSV columns**
+
+| Column | Meaning |
+| --- | --- |
+| `motion_detected` | True if the frame changed significantly |
+| `regenerate_mask` | True if a new segmentation mask is recommended |
+| `mask_valid` | True if the existing segmented PNG passed validation |
+| `mask_reason` | Reason when validation failed |
+
+**Useful options**
+
+```bash
+python src/stage3_preprocessing/frame_differencing.py \
+    --input-dir data/02_processed/cropped_avocado \
+    --mask-dir data/02_processed/segmented_avocado \
+    --motion-threshold 0.015 \
+    --pixel-threshold 45 \
+    --reference-strategy previous
+```
+
+Default thresholds can also be changed in `config.json` under `frame_diff`.
+
+---
+
+### Step 3: Segmentation
 
 ```bash
 python src/stage3_preprocessing/segmentation.py
@@ -432,7 +494,7 @@ Avocado numbering matches a bottom-to-top layout:
 
 Process only some frames:
 
-```bash
+```bash 
 # By frame number (strawberry frame-XX names)
 python src/stage3_preprocessing/segmentation.py --start-frame 10 --end-frame 20
 python src/stage3_preprocessing/segmentation.py --only-frame 3 4 5
@@ -443,68 +505,6 @@ python src/stage3_preprocessing/segmentation.py --start-name "webcam_2026-06-14_
 # Keep old outputs when reprocessing
 python src/stage3_preprocessing/segmentation.py --keep-existing
 ```
-
----
-
-### Step 3: Frame differencing
-
-```bash
-python src/stage3_preprocessing/frame_differencing.py
-```
-
-For avocado, also set the mask folder:
-
-```bash
-python src/stage3_preprocessing/frame_differencing.py --mask-dir data/02_processed/segmented_avocado
-```
-
-**Purpose**
-
-- Compares each frame with the previous frame (or last stable frame).
-- Computes motion ratio and flags frames that likely need a new mask.
-- Validates existing segmented PNGs (alpha size, fruit color, border contact).
-- Writes a CSV report plus optional debug images.
-
-**Input**
-
-All folders under `data/02_processed/` whose names start with `cropped_`:
-
-```text
-cropped_18-03-2026/
-cropped_19-03-2026/
-cropped_avocado/
-```
-
-**Output** (one result folder per cropped input folder)
-
-```text
-frame_differencing_results_{date_or_name}/
-    frame_differencing_report_{date_or_name}.csv
-    motion_masks/
-    motion_overlays/
-```
-
-**Key CSV columns**
-
-| Column | Meaning |
-| --- | --- |
-| `motion_detected` | True if the frame changed significantly |
-| `regenerate_mask` | True if a new segmentation mask is recommended |
-| `mask_valid` | True if the existing segmented PNG passed validation |
-| `mask_reason` | Reason when validation failed |
-
-**Useful options**
-
-```bash
-python src/stage3_preprocessing/frame_differencing.py \
-    --input-dir data/02_processed/cropped_avocado \
-    --mask-dir data/02_processed/segmented_avocado \
-    --motion-threshold 0.015 \
-    --pixel-threshold 45 \
-    --reference-strategy previous
-```
-
-Default thresholds can also be changed in `config.json` under `frame_diff`.
 
 ---
 
