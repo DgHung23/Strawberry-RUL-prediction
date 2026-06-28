@@ -371,11 +371,11 @@ def apply_clahe_lab(image, clip_limit=2.0, grid_size=(5, 5)):
 
 
 AVOCADO_CELLS = {
-    1: [200,  450,  750,  1080],
-    2: [750,  450,  1300, 1080],
-    3: [1300, 450,  1920, 1080],
-    4: [0,    0,    750,  650],
-    5: [700,  0,    1350, 650],
+    1: [200,  450,  750,  1040], #1000 => 1040
+    2: [750,  450,  1300, 1020], 
+    3: [1300, 450,  1800, 1060], #  980 => 1060
+    4: [0,    0,    730,  630],   # 750 650
+    5: [700,  0,    1330, 630], # 1350   650 
     6: [1300, 0,    1920, 650]
 }
 
@@ -523,7 +523,7 @@ def main():
             segmented_count = 0
 
             if regen_frame:
-                # Case 1: Chạy Candidate Mask -> GrabCut (segment) -> lưu mask mới
+                # Case 1: Run Candidate Mask -> GrabCut (segment) -> save new mask
                 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
                 thresh = create_candidate_mask(hsv, dataset=active_dataset)
 
@@ -597,7 +597,7 @@ def main():
 
                     segmented_count += 1
             else:
-                # Case 2: Chạy Local GrabCut (segment) -> lưu mask mới
+                # Case 2: Run Local GrabCut (segment) -> save new mask
                 for idx in range(1, 7):
                     x1, y1, x2, y2 = cells_dict[idx]
                     roi = img[y1:y2, x1:x2]
@@ -607,19 +607,38 @@ def main():
                     preproc = apply_clahe_lab(gw)
 
                     roi_h, roi_w = roi.shape[:2]
-                    mask = np.zeros((roi_h, roi_w), np.uint8)
+                    
+                    # create mask based on filter background function
+                    roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+                    is_bg = is_surface_background(roi_hsv)
+                    
+                    # initialize mask
+                    mask = np.full((roi_h, roi_w), cv2.GC_PR_FGD, dtype=np.uint8)
+                    
+                    # If scan the gray/white area of ​​the plastic tray/background, set it to "definitely background"
+                    mask[is_bg] = cv2.GC_BGD
+                    
+                
+                    mask[0:3, :] = cv2.GC_BGD
+                    mask[-3:, :] = cv2.GC_BGD
+                    mask[:, 0:3] = cv2.GC_BGD
+                    mask[:, -3:] = cv2.GC_BGD
+
                     bgdModel = np.zeros((1, 65), np.float64)
                     fgdModel = np.zeros((1, 65), np.float64)
 
-                    # Rect margin inside compartment
-                    margin = 25
-                    rect = (margin, margin, roi_w - 2 * margin, roi_h - 2 * margin)
-
-                    # Execute local GrabCut
-                    cv2.grabCut(preproc, mask, rect, bgdModel, fgdModel, 6, cv2.GC_INIT_WITH_RECT)
+                    # run GrabCut by MASK
+                    cv2.grabCut(preproc, mask, None, bgdModel, fgdModel, 6, cv2.GC_INIT_WITH_MASK)
 
                     # Get binary mask
                     binary_mask = np.where((mask == 1) | (mask == 3), 255, 0).astype('uint8')
+                    
+                
+                    binary_mask[is_bg] = 0
+                    
+                    # remove background pink tray 
+                    is_pink_tray = is_foreign_foreground(roi_hsv)
+                    binary_mask[is_pink_tray] = 0
 
                     # Clean mask: Keep largest component
                     contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -636,8 +655,8 @@ def main():
                     clean_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_OPEN, kernel_ellipse)
 
                     # Blur and threshold for smooth border
-                    blurred = cv2.GaussianBlur(clean_mask, (15, 15), 0)
-                    final_mask = np.where(blurred > 127, 255, 0).astype(np.uint8)
+                    blurred = cv2.GaussianBlur(clean_mask, (15, 15), 0)   
+                    final_mask = np.where(blurred > 127, 255, 0).astype(np.uint8) # 127
 
                     # Save full-size mask
                     full_size_mask = np.zeros((h, w), dtype=np.uint8)

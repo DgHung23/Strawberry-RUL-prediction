@@ -34,8 +34,8 @@ python src/stage3_preprocessing/crop_images.py
 
 ```bash
 python src/stage3_preprocessing/crop_images.py
-python src/stage3_preprocessing/segmentation.py
 python src/stage3_preprocessing/frame_differencing.py
+python src/stage3_preprocessing/segmentation.py
 python src/stage3_preprocessing/assign_id.py
 ```
 
@@ -45,7 +45,7 @@ Or run the full pipeline:
 python src/stage3_preprocessing/main_preprocessing.py
 ```
 
-Note: `main_preprocessing.py` also runs later steps (`eol.py`, `label_rul.py`, `manifests.py`, `split_data.py`) and starts with `extracting_frames.py`. Use individual scripts above if you only need crop, segment, QC, and ID assignment.
+Note: `main_preprocessing.py` also runs later steps (`eol.py`, `label_rul.py`, `manifests.py`, `split_data.py`). Use individual scripts above if you only need crop, segment, QC, and ID assignment.
 
 ---
 
@@ -118,10 +118,10 @@ Raw images
 crop_images.py          Center-crop to fixed width/height
     |
     v
-segmentation.py       Detect each fruit, remove background, save PNG + mask
+frame_differencing.py   Detect motion between frames, validate masks, write CSV report
     |
     v
-frame_differencing.py   Detect motion between frames, validate masks, write CSV report
+segmentation.py       Detect each fruit, remove background, save PNG + mask, if regenerate_mask = True (after run frame_differencing.py) => regenerate new mask
     |
     v
 assign_id.py            Group segmented images into F01..F06 folders
@@ -132,8 +132,8 @@ assign_id.py            Group segmented images into F01..F06 folders
 | Script | Purpose |
 | --- | --- |
 | `crop_images.py` | Reads raw images, center-crops them, saves JPG files |
-| `segmentation.py` | Finds up to 6 fruits per frame, segments each one, assigns grid position 1-6 |
 | `frame_differencing.py` | Compares consecutive frames, flags motion, validates segmentation quality |
+| `segmentation.py` | Finds up to 6 fruits per frame, segments each one, assigns grid position 1-6, regenerate new mask if regenerate_mask = True |
 | `assign_id.py` | Copies segmented PNGs into per-fruit folders (`F01`..`F06`) with standardized names |
 
 ---
@@ -156,6 +156,7 @@ Strawberry-RUL-prediction/
 |       |-- segmentation.py
 |       |-- frame_differencing.py
 |       |-- assign_id.py
+|       |-- ...
 |-- docs/
     |-- PREPROCESSING_GUIDE.md           This file
 ```
@@ -171,7 +172,9 @@ data/01_raw/
         frame-11_14-56-29.jpg
         ...
     19-03-2026/
+	...
     21-03-2026/
+	...
 ```
 
 Date folders must match the pattern `DD-MM-YYYY` (example: `18-03-2026`).
@@ -186,12 +189,14 @@ data/02_processed/cropped_strawberry/
         frame-10_14-41-29.jpg
         ...
     cropped_19-03-2026/
+	...
     cropped_21-03-2026/
+	...
 ```
 
 **Important path note for strawberry**
 
-`segmentation.py` does **not** read from `cropped_strawberry/`. It scans `data/02_processed/` directly and looks for folders named:
+`segmentation.py` does **not** read from `cropped_strawberry/`. It scans `data/02_processed/` directly and looks for folders named:   (note: "cropped_strawberry" is just an example for a 																	new strawberry dataset.)
 
 ```text
 cropped_{DD-MM-YYYY}
