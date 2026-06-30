@@ -27,6 +27,7 @@ Each fruit is tracked over time through repeated visual observations. Environmen
 | Stage | Name | Current Focus | Main Outputs |
 | --- | --- | --- | --- |
 | 1 | Data acquisition | Raw captures, sensor logs, experiment metadata | Raw videos/images, numeric CSV/JSON files, acquisition report |
+| 1.5 | Image inventory and readiness | Raw image integrity, master image inventory, numeric coverage checks | Inventory CSV, QC reports, debug report, property charts |
 | 2 | Data preprocessing | Frame extraction, ROI/ID separation, masks, invalid-frame detection | Fruit-ID image folders, mask outputs, preprocessing reports |
 | 2.5 | Labeling | EOL anchors and RUL labels | `labels.csv`, `eol_anchors.csv` |
 | Parallel | EDA | Dataset inspection and paper evidence | EDA graphs/reports |
@@ -86,6 +87,7 @@ output/
   results/         Metrics, predictions, and final model outputs
 
 src/
+  stage1_5_image_inventory/  Raw image inventory, integrity, and numeric coverage checks
   stage3_preprocessing/  Current preprocessing scripts from the older stage naming
   rul_android_app/       Prototype app surface for later deployment work
 
@@ -96,6 +98,7 @@ models/
 ## Documentation Map
 
 - [Data protocol](docs/DATA_PROTOCOL.md): required metadata, naming rules, integrity checks, and modality handling.
+- [Stage 1.5 image inventory plan](docs/STAGE_1_5_IMAGE_INVENTORY_PLAN.md): raw image inventory, readiness checks, reports, and numeric coverage cross-checks.
 - [Preprocessing spec](docs/PREPROCESSING_SPEC.md): Stage 2 workflow, outputs, QC checks, and current script mapping.
 - [Labeling protocol](docs/LABELING_PROTOCOL.md): EOL approval flow, RUL formula, label schema, and leakage rules.
 - [EDA plan](docs/EDA_PLAN.md): Hai's analysis scope and expected reports/graphs.
