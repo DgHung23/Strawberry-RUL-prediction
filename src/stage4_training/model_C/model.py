@@ -1,12 +1,12 @@
 """
-Model A: EfficientNet-B0 + CBAM + GRU + Regression Head
+Model C: EfficientNet-B0 + CBAM + LSTM + Regression Head
 
 Architecture Pipeline:
   1. EfficientNet-B0 (conv features, pretrained ImageNet) → 1280-dim feature maps (7×7)
   2. CBAM (Channel + Spatial Attention) → refined feature maps
   3. Global Average Pooling → 1280-dim vector
   4. Concatenate with environmental features (temp, humidity) → 1282-dim
-  5. GRU (temporal modeling) → 128-dim hidden
+  5. LSTM (temporal modeling) → 128-dim hidden
   6. Regression Head (128→64→1) → RUL in hours
 """
 
@@ -22,11 +22,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from src.shared.cbam import CBAM
 
 
-class StrawberryRULModel(nn.Module):
+class StrawberryRULModelC(nn.Module):
     """
     Hybrid model for strawberry RUL prediction.
 
-    EfficientNet-B0 (spatial) → CBAM (attention) → GRU (temporal) → Regression Head
+    EfficientNet-B0 (spatial) → CBAM (attention) → LSTM (temporal) → Regression Head
     """
 
     def __init__(
@@ -40,20 +40,20 @@ class StrawberryRULModel(nn.Module):
     ):
         """
         Args:
-            rnn_hidden_size: Hidden size of the GRU.
-            num_layers: Number of GRU layers.
-            dropout: Dropout rate for GRU and regression head.
+            rnn_hidden_size: Hidden size of the LSTM.
+            num_layers: Number of LSTM layers.
+            dropout: Dropout rate for LSTM and regression head.
             cbam_reduction_ratio: Channel reduction ratio for CBAM.
             cbam_kernel_size: Spatial kernel size for CBAM.
             freeze_backbone: If True, freeze EfficientNet weights.
         """
-        super(StrawberryRULModel, self).__init__()
+        super(StrawberryRULModelC, self).__init__()
 
         # ---- 1. CNN Backbone: EfficientNet-B0 ----
         weights = EfficientNet_B0_Weights.DEFAULT
         backbone = efficientnet_b0(weights=weights)
 
-        self.feature_dim = 1280  # EfficientNet-B0 final conv channels
+        self.feature_dim = 1280
         self.cnn_features = backbone.features  # Conv layers → (B, 1280, 7, 7) @224×224
         self.cnn_pool = backbone.avgpool  # AdaptiveAvgPool2d(1) → (B, 1280, 1, 1)
 
@@ -74,9 +74,9 @@ class StrawberryRULModel(nn.Module):
         # ---- 3. Environmental Features ----
         self.env_dim = 2  # temperature, humidity
 
-        # ---- 4. GRU Temporal Model ----
+        # ---- 4. LSTM Temporal Model ----
         self.rnn_input_size = self.feature_dim + self.env_dim  # 1280 + 2 = 1282
-        self.gru = nn.GRU(
+        self.lstm = nn.LSTM(
             input_size=self.rnn_input_size,
             hidden_size=rnn_hidden_size,
             num_layers=num_layers,
@@ -128,7 +128,6 @@ class StrawberryRULModel(nn.Module):
         batch_size, seq_len, C, H, W = images_seq.size()
 
         # ---- Step 1: Extract per-frame spatial features ----
-        # Reshape to (B*S, C, H, W) for parallel CNN processing
         images_reshaped = images_seq.view(batch_size * seq_len, C, H, W)
         spatial_features = self._extract_features(images_reshaped)  # (B*S, 1280)
 
@@ -136,14 +135,13 @@ class StrawberryRULModel(nn.Module):
         spatial_features = spatial_features.view(batch_size, seq_len, self.feature_dim)
 
         # ---- Step 2: Fuse with environmental features ----
-        # (B, S, 1280) + (B, S, 2) → (B, S, 1282)
-        fused_features = torch.cat((spatial_features, env_seq), dim=2)
+        fused_features = torch.cat((spatial_features, env_seq), dim=2)  # (B, S, 1282)
 
-        # ---- Step 3: Temporal modeling with GRU ----
-        gru_out, _ = self.gru(fused_features)  # (B, S, hidden_size)
+        # ---- Step 3: Temporal modeling with LSTM ----
+        lstm_out, _ = self.lstm(fused_features)  # (B, S, hidden_size)
 
         # Take the last time step for RUL prediction
-        last_out = gru_out[:, -1, :]  # (B, hidden_size)
+        last_out = lstm_out[:, -1, :]  # (B, hidden_size)
 
         # ---- Step 4: Regression ----
         rul = self.regressor(last_out)  # (B, 1)
@@ -155,8 +153,8 @@ class StrawberryRULModel(nn.Module):
 # Shape sanity check
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    print("Model A: EfficientNet-B0 + CBAM + GRU")
-    model = StrawberryRULModel()
+    print("Model C: EfficientNet-B0 + CBAM + LSTM")
+    model = StrawberryRULModelC()
     dummy_images = torch.randn(2, 5, 3, 224, 224)  # batch=2, seq=5
     dummy_envs = torch.randn(2, 5, 2)
     output = model(dummy_images, dummy_envs)
@@ -169,4 +167,4 @@ if __name__ == "__main__":
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"  Total params:    {total_params:,}")
     print(f"  Trainable params: {trainable_params:,}")
-    print("Model A test passed!")
+    print("Model C test passed!")

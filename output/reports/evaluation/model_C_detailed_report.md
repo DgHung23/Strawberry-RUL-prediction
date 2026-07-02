@@ -1,0 +1,137 @@
+# ©️  Model C — Detailed Report
+
+**Architecture:** EfficientNet-B0 + CBAM + LSTM
+
+*Auto-generated report — see `src/stage5_evaluation/generate_model_report.py`*
+
+---
+
+## 1. Executive Summary
+
+> **One-sentence summary:** Model C predicts strawberry shelf life with an average error of **32.0 hours** and achieves **good** accuracy (R² = 0.755).
+
+| Metric | Value | What This Means |
+|--------|-------|-----------------|
+| **MAE** | **32.0 hours** | On average, predictions are off by about 32 hours (~1.3 days)
+| **RMSE** | **39.4 hours** | Large errors are penalized — worst mistakes average ~39 hours
+| **R²** | **0.755** | Model C explains **75.5%** of the variation in fruit shelf life
+| **MAPE** | **64.7%** | The average error is about 65% of the true RUL value
+
+### How to Read R²
+
+R² = 0.755 means:
+
+- ✅ The model captures most of the pattern in strawberry degradation
+- ✅ Predictions are substantially better than just guessing the average shelf life
+
+## 2. How This Model Works
+
+Model C is a hybrid AI that combines three specialized modules:
+
+### Step-by-step pipeline
+
+```text
+  Strawberry photo (224x224)
+       |
+       v
+  [1] EfficientNet-B0 (Vision) — see shapes, colors, textures
+       |       EfficientNet-B0 (Vision Module) — a pretrained neural network that has already learned to recognize shapes, textures, and colors from millions of real-world images. It converts each strawberry photo into a list of 1,280 numbers describing what it sees.
+       v
+  [2] CBAM (Attention) — focus on spoilage signs
+       |       CBAM (Attention Module) — helps the model focus on the most important parts of each image. Instead of treating all pixels equally, CBAM learns to pay extra attention to signs of spoilage: mold spots, color changes, texture shifts. Think of it as the model's 'magnifying glass' over the fruit surface.
+       v
+  [3] LSTM (Memory) — track changes over 5 frames
+       |       LSTM (Time-Series Memory, Enhanced) — similar to GRU but with a more detailed 'memory cell'. Better at capturing subtle long-term changes across frames, but uses slightly more computation.
+       v
+  [4] Prediction Head — output single number = hours left
+```
+
+## 3. Training Progress
+
+The model was trained for **10 epochs** (cycles through the entire training set). Each epoch, it sees 2,614 training sequences (4 fruits × ~653 frames each, minus window overlap). After each epoch, it's tested on 598 validation sequences from Fruit #06 (never seen during training).
+
+| Epoch | Train Loss (h) | Val Loss (h) | Notes |
+|-------|---------------|-------------|-------|
+| 1 | 43.20 | 25.81 | |
+| 2 | 30.13 | 15.95 | |
+| 3 | 20.59 | 7.45 | |
+| 4 | 11.56 | 5.47 | ⭐ Best epoch (lowest validation error) |
+| 5 | 7.96 | 9.27 | ⚠️ Starting to overfit |
+| 6 | 6.63 | 10.42 | ⚠️ Starting to overfit |
+| 7 | 5.98 | 9.74 | ⚠️ Starting to overfit |
+| 8 | 5.72 | 12.19 | ⚠️ Starting to overfit |
+| 9 | 5.56 | 9.02 | ⚠️ Starting to overfit |
+| 10 | 5.24 | 12.01 | ⚠️ Starting to overfit |
+
+### What the loss curves tell us
+
+- **Best model saved at epoch 4** (validation error = 5.5 hours)
+- **Final training error:** 5.2 hours
+- **Final validation error:** 12.0 hours
+- ⚠️ **Overfitting detected:** After epoch 4, the model started memorizing training data rather than learning general patterns. Validation error increased from 5.5h to 12.0h (120% worse).
+  - **Fix:** Add dropout, freeze backbone earlier, use data augmentation, or reduce epochs.
+
+## 4. Test Set Performance (Final Evaluation)
+
+The best checkpoint (epoch 4) is evaluated on **672 test sequences** from Fruit #05 — a completely held-out fruit never seen during training or validation.
+
+### Error Distribution
+
+| Percentile | Error (hours) | Interpretation |
+|-----------|---------------|----------------|
+| **P5** | 0.0h |  |
+| **P10** | 0.9h |  |
+| **P25** | 12.4h |  |
+| **P50** | 31.5h | Half of predictions are this accurate or better |
+| **P75** | 48.5h |  |
+| **P90** | 63.1h | 90% of predictions are better than this |
+| **P95** | 70.7h | Only the worst 5% exceed this |
+
+- **Median error:** 31.5h (half of all predictions)
+- **90% of predictions:** error ≤ 63.1h
+- **Worst 5% of predictions:** error ≥ 70.7h
+- **Mean bias:** +9.2h (model tends to overestimate RUL)
+
+## 5. Performance Across Fruit Lifecycle
+
+Does the model work equally well for fresh strawberries vs nearly-spoiled ones?
+
+| RUL Range | Samples | Avg Error | Std Dev | Reliability |
+|-----------|---------|-----------|---------|-------------|
+| 0–50h | 370 | 31.5h | 22.7h | ❌ Poor |
+| 50–100h | 95 | 19.5h | 6.7h | ⚠️ Fair |
+| 100–150h | 43 | 8.7h | 6.6h | ✅ Good |
+| 150–200h | 90 | 28.3h | 10.3h | ⚠️ Fair |
+| 200–250h | 74 | 68.6h | 10.5h | ❌ Poor |
+| 250–300h | 0 | — | — | — |
+
+## 6. How to Improve
+
+### Quick wins (low effort, possible gains)
+
+- **Data augmentation:** Randomly flip, rotate, or adjust brightness of images during training to make the model more robust. Add to `dataset.py` transforms.
+- **Longer sequences:** Change `seq_len` from 5 to 8 or 10 in `train.py` — gives the temporal model more context per prediction.
+- **Learning rate schedule:** Reduce learning rate when validation loss plateaus (add `torch.optim.lr_scheduler.ReduceLROnPlateau`).
+- **Early stopping:** Stop training automatically when validation loss stops improving for N epochs, instead of fixed 10 epochs.
+
+### Architecture improvements (higher effort)
+
+- **Larger EfficientNet variant:** B1 or B2 offers richer features at the cost of speed.
+- **Deeper RNN:** Increase `num_layers` from 1 to 2 (may need more data).
+- **Multi-head attention:** Replace or augment CBAM with transformer-style self-attention.
+- **Try GRU instead:** Model C uses LSTM. Model A uses GRU with the same backbone — compare their reports.
+
+## 7. File Inventory
+
+| File | Path | Status |
+|------|------|--------|
+| Model checkpoint | `models\model_C\best_model.pth` | ✅ Exists |
+| Performance metrics | `data\model_C_outputs\metrics.json` | ✅ |
+| Epoch-by-epoch loss | `data\model_C_outputs\training_history.csv` | ✅ |
+| Test set predictions | `data\model_C_outputs\test_predictions.csv` | ✅ |
+
+---
+
+*Report generated by `src/stage5_evaluation/generate_model_report.py`*  
+*Model architecture: EfficientNet-B0 + CBAM + LSTM*  
+*Training data: Fruits F01-F04 (2,614 sequences) | Validation: Fruit F06 (598 sequences) | Test: Fruit F05 (672 sequences)*

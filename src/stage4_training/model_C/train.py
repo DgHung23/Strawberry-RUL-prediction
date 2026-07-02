@@ -1,9 +1,9 @@
 """
-Training script for Model B: MobileNetV2 + CBAM + LSTM
+Training script for Model C: EfficientNet-B0 + CBAM + LSTM
 
 Saves:
-  - best_model.pth  → models/model_B/
-  - training_history.csv → data/model_B_outputs/
+  - best_model.pth  → models/model_C/
+  - training_history.csv → data/model_C_outputs/
 """
 
 import os
@@ -16,7 +16,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from dataset import StrawberrySequenceDataset
-from model import StrawberryRULModelB
+from model import StrawberryRULModelC
 
 
 def train():
@@ -26,10 +26,10 @@ def train():
     val_dir = project_root / "data" / "03_split" / "val"
     test_dir = project_root / "data" / "03_split" / "test"
 
-    models_dir = project_root / "models" / "model_B"
+    models_dir = project_root / "models" / "model_C"
     models_dir.mkdir(parents=True, exist_ok=True)
 
-    outputs_dir = project_root / "data" / "model_B_outputs"
+    outputs_dir = project_root / "data" / "model_C_outputs"
     outputs_dir.mkdir(parents=True, exist_ok=True)
 
     # ---- 2. Hyperparameters ----
@@ -56,13 +56,13 @@ def train():
     print(f"Test sequences:  {len(test_dataset)}")
 
     # ---- 4. Model, Loss, Optimizer ----
-    model = StrawberryRULModelB().to(device)
+    model = StrawberryRULModelC().to(device)
     criterion = nn.L1Loss()  # MAE — interpretable in hours
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"\nModel B: MobileNetV2 + CBAM + LSTM")
+    print(f"\nModel C: EfficientNet-B0 + CBAM + LSTM")
     print(f"  Total params:    {total_params:,}")
     print(f"  Trainable params: {trainable_params:,}")
 
@@ -155,7 +155,7 @@ def train():
 
     rmse = torch.sqrt(torch.mean((preds_tensor - targets_tensor) ** 2)).item()
 
-    # MAPE — avoid division by zero
+    # MAPE (Mean Absolute Percentage Error) — avoid division by zero
     nonzero_mask = targets_tensor != 0
     mape = (torch.abs((preds_tensor[nonzero_mask] - targets_tensor[nonzero_mask]) / targets_tensor[nonzero_mask]).mean() * 100).item() if nonzero_mask.sum() > 0 else float('nan')
 
@@ -180,7 +180,7 @@ def train():
     # Save metrics
     import json
     metrics = {
-        "model": "Model_B_MobileNetV2_CBAM_LSTM",
+        "model": "Model_C_EfficientNet-B0_CBAM_LSTM",
         "mae": test_loss,
         "rmse": rmse,
         "mape": mape,

@@ -68,35 +68,59 @@ The team reviews progress twice per week. Each review should answer:
 
 ```text
 data/
-  01_raw/          Raw videos, frames, sensor logs, and acquisition metadata
-  02_processed/    Cropped, segmented, assigned, and model-ready intermediate files
-  03_split/        Fruit-ID-safe train/validation/test or LOOCV split outputs
+  01_raw/            Raw videos, frames, sensor logs, and acquisition metadata
+  02_processed/      Cropped, segmented, assigned, and model-ready intermediate files
+  03_split/          Fruit-ID-safe train/val/test split (F01-F04/F06/F05)
+  model_A_outputs/   Training history, predictions, metrics for Model A
+  model_B_outputs/   Training history, predictions, metrics for Model B
+  model_C_outputs/   (same for Model C)
+  model_D_outputs/   (same for Model D)
 
 docs/
-  DATA_PROTOCOL.md
-  PREPROCESSING_SPEC.md
-  LABELING_PROTOCOL.md
-  EDA_PLAN.md
-  PROJECT_PLAN.md
-  PROGRESS_TRACKER.md
+  TRAINING_GUIDE.md       Model training guide (architecture, training, comparison)
+  DATA_PROTOCOL.md        Required metadata, naming rules, integrity checks
+  PREPROCESSING_SPEC.md   Stage 2 workflow, outputs, QC checks
+  PREPROCESSING_GUIDE.md  Operator guide for running preprocessing
+  LABELING_PROTOCOL.md    EOL approval flow, RUL formula, label schema
+  EDA_PLAN.md             EDA scope and required reports/graphs
+  PROJECT_PLAN.md         Phase plan, owners, acceptance criteria
+  PROGRESS_TRACKER.md     Milestone tracker for twice-weekly review
+  model_A/ - model_D/     Per-model README and training details
 
 output/
-  graphs/          EDA, preprocessing, training, tuning, evaluation figures
-  reports/         Stage reports, summaries, QC logs, and paper evidence
-  results/         Metrics, predictions, and final model outputs
+  graphs/
+    evaluation/      Comparison charts from compare_models.py
+    training/        Per-model training curve plots
+  reports/
+    evaluation/      Comparison report (auto-generated)
+    training/        Per-model training reports
+  results/           Final metrics and prediction CSVs
 
 src/
-  stage3_preprocessing/  Current preprocessing scripts from the older stage naming
-  rul_android_app/       Prototype app surface for later deployment work
+  shared/
+    cbam.py               CBAM attention module (used by all 4 models)
+  stage3_preprocessing/   Preprocessing scripts (crop, segment, assign, label, split)
+  stage4_training/
+    model_A/              EfficientNet-B0 + CBAM + GRU
+    model_B/              MobileNetV2 + CBAM + LSTM
+    model_C/              EfficientNet-B0 + CBAM + LSTM
+    model_D/              MobileNetV2 + CBAM + GRU
+  stage5_evaluation/
+    compare_models.py     Cross-model comparison charts and report
 
 models/
-  model_A/         Existing prototype model files and notebooks
+  model_A/best_model.pth  Trained checkpoints (one per model)
+  model_B/best_model.pth
+  model_C/best_model.pth
+  model_D/best_model.pth
 ```
 
 ## Documentation Map
 
+- [Training Guide](docs/TRAINING_GUIDE.md): **Start here for model training.** Architecture, how to train, evaluation, comparison.
 - [Data protocol](docs/DATA_PROTOCOL.md): required metadata, naming rules, integrity checks, and modality handling.
 - [Preprocessing spec](docs/PREPROCESSING_SPEC.md): Stage 2 workflow, outputs, QC checks, and current script mapping.
+- [Preprocessing guide](docs/PREPROCESSING_GUIDE.md): Step-by-step instructions for running preprocessing scripts.
 - [Labeling protocol](docs/LABELING_PROTOCOL.md): EOL approval flow, RUL formula, label schema, and leakage rules.
 - [EDA plan](docs/EDA_PLAN.md): Hai's analysis scope and expected reports/graphs.
 - [Project plan](docs/PROJECT_PLAN.md): phase plan, owners, acceptance criteria, and review rhythm.
@@ -122,13 +146,37 @@ Example for a script that already supports CLI paths:
 python src/stage3_preprocessing/frame_differencing.py --input-dir data/01_raw/<experiment>/<date>/cropped --mask-dir data/02_processed/<experiment>/<date>/segmented --output-csv output/reports/processed/frame_differencing_report.csv
 ```
 
-## Model Development Placeholder
+## Model Development
 
-Strawberry experiments may use simpler sequence architectures such as CNN-LSTM, GRU, EfficientNet-based feature extraction, or similar baselines.
+### Strawberry RUL Models (Active)
+
+Four hybrid CNN-Attention-RNN architectures have been implemented for strawberry RUL prediction. All models share the same pipeline:
+
+```
+CNN Backbone -> CBAM Attention -> Temporal Model (GRU/LSTM) -> Regression Head -> RUL (hours)
+```
+
+| Model | CNN | Attention | Temporal | Params | Status |
+|-------|-----|-----------|----------|--------|--------|
+| **A** | EfficientNet-B0 | CBAM | GRU | 4.76M | Trained |
+| **B** | MobileNetV2 | CBAM | LSTM | 3.16M | Trained |
+| **C** | EfficientNet-B0 | CBAM | LSTM | 4.94M | Ready to train |
+| **D** | MobileNetV2 | CBAM | GRU | 2.98M | Ready to train |
+
+Training produces checkpoints (`models/model_X/`), metrics, predictions, and training history (`data/model_X_outputs/`). A comparison script at `src/stage5_evaluation/compare_models.py` generates charts and a report across all trained models.
+
+**Full training documentation:** [docs/TRAINING_GUIDE.md](docs/TRAINING_GUIDE.md)
+
+### Quick Start (Training)
+
+```bash
+cd src/stage4_training/model_A && python train.py   # train one model
+python src/stage5_evaluation/compare_models.py       # compare all trained models
+```
+
+### Avocado (Future)
 
 Avocado experiments may later use attention-based multimodal approaches such as ViT/Mamba backbones with multimodal bottleneck fusion, using visual sequences, environmental data, and firmness.
-
-Model work should not become the main branch of the project until the data protocol, labeling protocol, and leakage-safe split policy are stable.
 
 ## Minimum Definition of Done
 

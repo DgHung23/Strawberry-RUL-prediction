@@ -1,8 +1,8 @@
 """
-Model A: EfficientNet-B0 + CBAM + GRU + Regression Head
+Model D: MobileNetV2 + CBAM + GRU + Regression Head
 
 Architecture Pipeline:
-  1. EfficientNet-B0 (conv features, pretrained ImageNet) → 1280-dim feature maps (7×7)
+  1. MobileNetV2 (conv features, pretrained ImageNet) → 1280-dim feature maps (7×7)
   2. CBAM (Channel + Spatial Attention) → refined feature maps
   3. Global Average Pooling → 1280-dim vector
   4. Concatenate with environmental features (temp, humidity) → 1282-dim
@@ -15,18 +15,18 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
-from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
+from torchvision.models import mobilenet_v2, MobileNet_V2_Weights
 
 # Allow import from src/shared/
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 from src.shared.cbam import CBAM
 
 
-class StrawberryRULModel(nn.Module):
+class StrawberryRULModelD(nn.Module):
     """
     Hybrid model for strawberry RUL prediction.
 
-    EfficientNet-B0 (spatial) → CBAM (attention) → GRU (temporal) → Regression Head
+    MobileNetV2 (spatial) → CBAM (attention) → GRU (temporal) → Regression Head
     """
 
     def __init__(
@@ -45,23 +45,21 @@ class StrawberryRULModel(nn.Module):
             dropout: Dropout rate for GRU and regression head.
             cbam_reduction_ratio: Channel reduction ratio for CBAM.
             cbam_kernel_size: Spatial kernel size for CBAM.
-            freeze_backbone: If True, freeze EfficientNet weights.
+            freeze_backbone: If True, freeze MobileNetV2 weights.
         """
-        super(StrawberryRULModel, self).__init__()
+        super(StrawberryRULModelD, self).__init__()
 
-        # ---- 1. CNN Backbone: EfficientNet-B0 ----
-        weights = EfficientNet_B0_Weights.DEFAULT
-        backbone = efficientnet_b0(weights=weights)
+        # ---- 1. CNN Backbone: MobileNetV2 ----
+        weights = MobileNet_V2_Weights.DEFAULT
+        backbone = mobilenet_v2(weights=weights)
 
-        self.feature_dim = 1280  # EfficientNet-B0 final conv channels
+        self.feature_dim = 1280
         self.cnn_features = backbone.features  # Conv layers → (B, 1280, 7, 7) @224×224
-        self.cnn_pool = backbone.avgpool  # AdaptiveAvgPool2d(1) → (B, 1280, 1, 1)
+        self.cnn_pool = nn.AdaptiveAvgPool2d(1)  # (B, 1280, 1, 1)
 
         # Freeze backbone if requested
         if freeze_backbone:
             for param in self.cnn_features.parameters():
-                param.requires_grad = False
-            for param in self.cnn_pool.parameters():
                 param.requires_grad = False
 
         # ---- 2. CBAM Attention Module ----
@@ -95,7 +93,7 @@ class StrawberryRULModel(nn.Module):
     def _extract_features(self, images: torch.Tensor) -> torch.Tensor:
         """
         Extract spatial features from a batch of images using
-        EfficientNet-B0 + CBAM.
+        MobileNetV2 + CBAM.
 
         Args:
             images: (N, 3, 224, 224) — arbitrary batch of single frames.
@@ -128,7 +126,6 @@ class StrawberryRULModel(nn.Module):
         batch_size, seq_len, C, H, W = images_seq.size()
 
         # ---- Step 1: Extract per-frame spatial features ----
-        # Reshape to (B*S, C, H, W) for parallel CNN processing
         images_reshaped = images_seq.view(batch_size * seq_len, C, H, W)
         spatial_features = self._extract_features(images_reshaped)  # (B*S, 1280)
 
@@ -136,8 +133,7 @@ class StrawberryRULModel(nn.Module):
         spatial_features = spatial_features.view(batch_size, seq_len, self.feature_dim)
 
         # ---- Step 2: Fuse with environmental features ----
-        # (B, S, 1280) + (B, S, 2) → (B, S, 1282)
-        fused_features = torch.cat((spatial_features, env_seq), dim=2)
+        fused_features = torch.cat((spatial_features, env_seq), dim=2)  # (B, S, 1282)
 
         # ---- Step 3: Temporal modeling with GRU ----
         gru_out, _ = self.gru(fused_features)  # (B, S, hidden_size)
@@ -155,8 +151,8 @@ class StrawberryRULModel(nn.Module):
 # Shape sanity check
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    print("Model A: EfficientNet-B0 + CBAM + GRU")
-    model = StrawberryRULModel()
+    print("Model D: MobileNetV2 + CBAM + GRU")
+    model = StrawberryRULModelD()
     dummy_images = torch.randn(2, 5, 3, 224, 224)  # batch=2, seq=5
     dummy_envs = torch.randn(2, 5, 2)
     output = model(dummy_images, dummy_envs)
@@ -169,4 +165,4 @@ if __name__ == "__main__":
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"  Total params:    {total_params:,}")
     print(f"  Trainable params: {trainable_params:,}")
-    print("Model A test passed!")
+    print("Model D test passed!")

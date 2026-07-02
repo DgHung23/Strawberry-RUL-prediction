@@ -1,9 +1,9 @@
 """
-Training script for Model B: MobileNetV2 + CBAM + LSTM
+Training script for Model D: MobileNetV2 + CBAM + GRU
 
 Saves:
-  - best_model.pth  → models/model_B/
-  - training_history.csv → data/model_B_outputs/
+  - best_model.pth  → models/model_D/
+  - training_history.csv → data/model_D_outputs/
 """
 
 import os
@@ -16,7 +16,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from dataset import StrawberrySequenceDataset
-from model import StrawberryRULModelB
+from model import StrawberryRULModelD
 
 
 def train():
@@ -26,10 +26,10 @@ def train():
     val_dir = project_root / "data" / "03_split" / "val"
     test_dir = project_root / "data" / "03_split" / "test"
 
-    models_dir = project_root / "models" / "model_B"
+    models_dir = project_root / "models" / "model_D"
     models_dir.mkdir(parents=True, exist_ok=True)
 
-    outputs_dir = project_root / "data" / "model_B_outputs"
+    outputs_dir = project_root / "data" / "model_D_outputs"
     outputs_dir.mkdir(parents=True, exist_ok=True)
 
     # ---- 2. Hyperparameters ----
@@ -56,13 +56,13 @@ def train():
     print(f"Test sequences:  {len(test_dataset)}")
 
     # ---- 4. Model, Loss, Optimizer ----
-    model = StrawberryRULModelB().to(device)
+    model = StrawberryRULModelD().to(device)
     criterion = nn.L1Loss()  # MAE — interpretable in hours
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"\nModel B: MobileNetV2 + CBAM + LSTM")
+    print(f"\nModel D: MobileNetV2 + CBAM + GRU")
     print(f"  Total params:    {total_params:,}")
     print(f"  Trainable params: {trainable_params:,}")
 
@@ -180,7 +180,7 @@ def train():
     # Save metrics
     import json
     metrics = {
-        "model": "Model_B_MobileNetV2_CBAM_LSTM",
+        "model": "Model_D_MobileNetV2_CBAM_GRU",
         "mae": test_loss,
         "rmse": rmse,
         "mape": mape,
