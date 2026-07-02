@@ -27,6 +27,7 @@ Each fruit is tracked over time through repeated visual observations. Environmen
 | Stage | Name | Current Focus | Main Outputs |
 | --- | --- | --- | --- |
 | 1 | Data acquisition | Raw captures, sensor logs, experiment metadata | Raw videos/images, numeric CSV/JSON files, acquisition report |
+| 1.5 | Image inventory and readiness | Raw image integrity, master image inventory, numeric coverage checks | Inventory CSV, QC reports, debug report, property charts |
 | 2 | Data preprocessing | Frame extraction, ROI/ID separation, masks, invalid-frame detection | Fruit-ID image folders, mask outputs, preprocessing reports |
 | 2.5 | Labeling | EOL anchors and RUL labels | `labels.csv`, `eol_anchors.csv` |
 | Parallel | EDA | Dataset inspection and paper evidence | EDA graphs/reports |
@@ -97,6 +98,7 @@ output/
   results/           Final metrics and prediction CSVs
 
 src/
+<<<<<<< HEAD
   shared/
     cbam.py               CBAM attention module (used by all 4 models)
   stage3_preprocessing/   Preprocessing scripts (crop, segment, assign, label, split)
@@ -107,6 +109,11 @@ src/
     model_D/              MobileNetV2 + CBAM + GRU
   stage5_evaluation/
     compare_models.py     Cross-model comparison charts and report
+=======
+  stage1_5_image_inventory/  Raw image inventory, integrity, and numeric coverage checks
+  stage3_preprocessing/  Current preprocessing scripts from the older stage naming
+  rul_android_app/       Prototype app surface for later deployment work
+>>>>>>> 84323c4dab20ad24dbb39471cd39190483f7d0bd
 
 models/
   model_A/best_model.pth  Trained checkpoints (one per model)
@@ -119,6 +126,7 @@ models/
 
 - [Training Guide](docs/TRAINING_GUIDE.md): **Start here for model training.** Architecture, how to train, evaluation, comparison.
 - [Data protocol](docs/DATA_PROTOCOL.md): required metadata, naming rules, integrity checks, and modality handling.
+- [Stage 1.5 image inventory plan](docs/STAGE_1_5_IMAGE_INVENTORY_PLAN.md): raw image inventory, readiness checks, reports, and numeric coverage cross-checks.
 - [Preprocessing spec](docs/PREPROCESSING_SPEC.md): Stage 2 workflow, outputs, QC checks, and current script mapping.
 - [Preprocessing guide](docs/PREPROCESSING_GUIDE.md): Step-by-step instructions for running preprocessing scripts.
 - [Labeling protocol](docs/LABELING_PROTOCOL.md): EOL approval flow, RUL formula, label schema, and leakage rules.

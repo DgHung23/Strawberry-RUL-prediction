@@ -34,8 +34,8 @@ python src/stage3_preprocessing/crop_images.py
 
 ```bash
 python src/stage3_preprocessing/crop_images.py
-python src/stage3_preprocessing/segmentation.py
 python src/stage3_preprocessing/frame_differencing.py
+python src/stage3_preprocessing/segmentation.py
 python src/stage3_preprocessing/assign_id.py
 ```
 
@@ -45,7 +45,7 @@ Or run the full pipeline:
 python src/stage3_preprocessing/main_preprocessing.py
 ```
 
-Note: `main_preprocessing.py` also runs later steps (`eol.py`, `label_rul.py`, `manifests.py`, `split_data.py`) and starts with `extracting_frames.py`. Use individual scripts above if you only need crop, segment, QC, and ID assignment.
+Note: `main_preprocessing.py` also runs later steps (`eol.py`, `label_rul.py`, `manifests.py`, `split_data.py`). Use individual scripts above if you only need crop, segment, QC, and ID assignment.
 
 ---
 
@@ -118,10 +118,10 @@ Raw images
 crop_images.py          Center-crop to fixed width/height
     |
     v
-segmentation.py       Detect each fruit, remove background, save PNG + mask
+frame_differencing.py   Detect motion between frames, validate masks, write CSV report
     |
     v
-frame_differencing.py   Detect motion between frames, validate masks, write CSV report
+segmentation.py       Detect each fruit, remove background, save PNG + mask, if regenerate_mask = True (after run frame_differencing.py) => regenerate new mask
     |
     v
 assign_id.py            Group segmented images into F01..F06 folders
@@ -132,8 +132,8 @@ assign_id.py            Group segmented images into F01..F06 folders
 | Script | Purpose |
 | --- | --- |
 | `crop_images.py` | Reads raw images, center-crops them, saves JPG files |
-| `segmentation.py` | Finds up to 6 fruits per frame, segments each one, assigns grid position 1-6 |
 | `frame_differencing.py` | Compares consecutive frames, flags motion, validates segmentation quality |
+| `segmentation.py` | Finds up to 6 fruits per frame, segments each one, assigns grid position 1-6, regenerate new mask if regenerate_mask = True |
 | `assign_id.py` | Copies segmented PNGs into per-fruit folders (`F01`..`F06`) with standardized names |
 
 ---
@@ -156,6 +156,7 @@ Strawberry-RUL-prediction/
 |       |-- segmentation.py
 |       |-- frame_differencing.py
 |       |-- assign_id.py
+|       |-- ...
 |-- docs/
     |-- PREPROCESSING_GUIDE.md           This file
 ```
@@ -171,7 +172,9 @@ data/01_raw/
         frame-11_14-56-29.jpg
         ...
     19-03-2026/
+	...
     21-03-2026/
+	...
 ```
 
 Date folders must match the pattern `DD-MM-YYYY` (example: `18-03-2026`).
@@ -186,12 +189,14 @@ data/02_processed/cropped_strawberry/
         frame-10_14-41-29.jpg
         ...
     cropped_19-03-2026/
+	...
     cropped_21-03-2026/
+	...
 ```
 
 **Important path note for strawberry**
 
-`segmentation.py` does **not** read from `cropped_strawberry/`. It scans `data/02_processed/` directly and looks for folders named:
+`segmentation.py` does **not** read from `cropped_strawberry/`. It scans `data/02_processed/` directly and looks for folders named:   (note: "cropped_strawberry" is just an example for a 																	new strawberry dataset.)
 
 ```text
 cropped_{DD-MM-YYYY}
@@ -369,7 +374,69 @@ python src/stage3_preprocessing/crop_images.py
 
 ---
 
-### Step 2: Segmentation
+### Step 2: Frame differencing
+
+```bash
+python src/stage3_preprocessing/frame_differencing.py
+```
+
+For avocado, also set the mask folder:
+
+```bash
+python src/stage3_preprocessing/frame_differencing.py 
+```
+
+**Purpose**
+
+- Compares each frame with the previous frame (or last stable frame).
+- Computes motion ratio and flags frames that likely need a new mask.
+- Validates existing segmented PNGs (alpha size, fruit color, border contact).
+- Writes a CSV report plus optional debug images.
+
+**Input**
+
+All folders under `data/02_processed/` whose names start with `cropped_`:
+
+```text
+cropped_18-03-2026/
+cropped_19-03-2026/
+cropped_avocado/
+```
+
+**Output** (one result folder per cropped input folder)
+
+```text
+frame_differencing_results_{date_or_name}/
+    frame_differencing_report_{date_or_name}.csv
+    motion_masks/
+    motion_overlays/
+```
+
+**Key CSV columns**
+
+| Column | Meaning |
+| --- | --- |
+| `motion_detected` | True if the frame changed significantly |
+| `regenerate_mask` | True if a new segmentation mask is recommended |
+| `mask_valid` | True if the existing segmented PNG passed validation |
+| `mask_reason` | Reason when validation failed |
+
+**Useful options**
+
+```bash
+python src/stage3_preprocessing/frame_differencing.py \
+    --input-dir data/02_processed/cropped_avocado \
+    --mask-dir data/02_processed/segmented_avocado \
+    --motion-threshold 0.015 \
+    --pixel-threshold 45 \
+    --reference-strategy previous
+```
+
+Default thresholds can also be changed in `config.json` under `frame_diff`.
+
+---
+
+### Step 3: Segmentation
 
 ```bash
 python src/stage3_preprocessing/segmentation.py
@@ -427,7 +494,7 @@ Avocado numbering matches a bottom-to-top layout:
 
 Process only some frames:
 
-```bash
+```bash 
 # By frame number (strawberry frame-XX names)
 python src/stage3_preprocessing/segmentation.py --start-frame 10 --end-frame 20
 python src/stage3_preprocessing/segmentation.py --only-frame 3 4 5
@@ -438,68 +505,6 @@ python src/stage3_preprocessing/segmentation.py --start-name "webcam_2026-06-14_
 # Keep old outputs when reprocessing
 python src/stage3_preprocessing/segmentation.py --keep-existing
 ```
-
----
-
-### Step 3: Frame differencing
-
-```bash
-python src/stage3_preprocessing/frame_differencing.py
-```
-
-For avocado, also set the mask folder:
-
-```bash
-python src/stage3_preprocessing/frame_differencing.py --mask-dir data/02_processed/segmented_avocado
-```
-
-**Purpose**
-
-- Compares each frame with the previous frame (or last stable frame).
-- Computes motion ratio and flags frames that likely need a new mask.
-- Validates existing segmented PNGs (alpha size, fruit color, border contact).
-- Writes a CSV report plus optional debug images.
-
-**Input**
-
-All folders under `data/02_processed/` whose names start with `cropped_`:
-
-```text
-cropped_18-03-2026/
-cropped_19-03-2026/
-cropped_avocado/
-```
-
-**Output** (one result folder per cropped input folder)
-
-```text
-frame_differencing_results_{date_or_name}/
-    frame_differencing_report_{date_or_name}.csv
-    motion_masks/
-    motion_overlays/
-```
-
-**Key CSV columns**
-
-| Column | Meaning |
-| --- | --- |
-| `motion_detected` | True if the frame changed significantly |
-| `regenerate_mask` | True if a new segmentation mask is recommended |
-| `mask_valid` | True if the existing segmented PNG passed validation |
-| `mask_reason` | Reason when validation failed |
-
-**Useful options**
-
-```bash
-python src/stage3_preprocessing/frame_differencing.py \
-    --input-dir data/02_processed/cropped_avocado \
-    --mask-dir data/02_processed/segmented_avocado \
-    --motion-threshold 0.015 \
-    --pixel-threshold 45 \
-    --reference-strategy previous
-```
-
-Default thresholds can also be changed in `config.json` under `frame_diff`.
 
 ---
 

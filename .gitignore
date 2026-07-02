@@ -7,3 +7,20 @@ data/**
 !data/01_raw/.gitkeep
 !data/02_processed/.gitkeep
 !data/03_split/.gitkeep
+
+# Runtime logs and private stage journals.
+logs/**
+
+# Python runtime/cache artifacts.
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Local model artifacts can be large and machine-specific.
+models/**/*.pth
+models/**/*.pt
+models/Strawberry_models/
+
+# Stale root-level Stage 1.5 reports from before sample/full output split.
+output/reports/stage_1_5/image_inventory_summary.md
+output/reports/stage_1_5/stage_1_5_run_debug.json
