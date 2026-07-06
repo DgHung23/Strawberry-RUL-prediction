@@ -8,11 +8,8 @@ scikit-learn
 matplotlib
 tqdm
 ipykernel
-<<<<<<< HEAD
 fastapi
 uvicorn
 python-multipart
-=======
 
 ltn test
->>>>>>> e8458596c8ef42214dfe67d32ecfcf9d67cc1aa4
