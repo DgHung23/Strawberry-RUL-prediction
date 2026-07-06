@@ -15,7 +15,7 @@ It lets the user pick an image from the gallery or camera, sends that image to t
 From the repository root, go to the Flutter app folder:
 
 ```powershell
-cd C:\fluttersrc\Strawberry-RUL-prediction\strawberry_rul_app
+cd your_path...\Strawberry-RUL-prediction\strawberry_rul_app
 ```
 
 Run all Flutter commands in this folder, not from the repository root.
@@ -119,7 +119,7 @@ Open
 Select this folder:
 
 ```text
-C:\fluttersrc\Strawberry-RUL-prediction\strawberry_rul_app
+your_path...\Strawberry-RUL-prediction\strawberry_rul_app
 ```
 
 Do not open only the `android/` folder unless you specifically want to inspect the native Android project. For normal Flutter development, open the `strawberry_rul_app/` folder.
@@ -182,7 +182,7 @@ flutter devices
 From the Flutter app folder:
 
 ```powershell
-cd C:\fluttersrc\Strawberry-RUL-prediction\strawberry_rul_app
+cd your_path...\Strawberry-RUL-prediction\strawberry_rul_app
 ```
 
 Run:
@@ -250,7 +250,7 @@ static const String baseUrl = "http://10.0.2.2:8000";
 If you want to keep the frontend as-is, run the backend on port `8001`:
 
 ```powershell
-cd C:\fluttersrc\Strawberry-RUL-prediction
+cd your_path...\Strawberry-RUL-prediction
 py -3.11 -m uvicorn app:app --app-dir src --host 127.0.0.1 --port 8001
 ```
 

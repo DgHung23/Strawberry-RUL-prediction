@@ -5,7 +5,7 @@ This guide explains how to run the backend server, where the API is located, and
 The backend uses FastAPI. The trained model file is:
 
 ```text
-C:\fluttersrc\Strawberry-RUL-prediction\models\model_D\best_model.pth
+...\Strawberry-RUL-prediction\models\model_D\best_model.pth
 ```
 
 The backend receives one image, segments the strawberry, runs the trained Model D checkpoint, and returns the Remaining Useful Life prediction as JSON.
@@ -15,7 +15,7 @@ The backend receives one image, segments the strawberry, runs the trained Model 
 Open a terminal in the project root:
 
 ```powershell
-cd C:\fluttersrc\Strawberry-RUL-prediction
+cd your_path...\Strawberry-RUL-prediction
 ```
 
 Important backend files:
@@ -434,7 +434,7 @@ Possible reasons:
 Check that this file exists:
 
 ```text
-C:\fluttersrc\Strawberry-RUL-prediction\models\model_D\best_model.pth
+...\Strawberry-RUL-prediction\models\model_D\best_model.pth
 ```
 
 Also check the model path in:
@@ -448,7 +448,7 @@ src/config_app/config.json
 Before connecting the frontend, confirm these points:
 
 ```text
-[ ] You are in C:\fluttersrc\Strawberry-RUL-prediction
+[ ] You are in your_path...\Strawberry-RUL-prediction
 [ ] Python 3.11 dependencies are installed
 [ ] models\model_D\best_model.pth exists
 [ ] Backend is running on http://127.0.0.1:8000
