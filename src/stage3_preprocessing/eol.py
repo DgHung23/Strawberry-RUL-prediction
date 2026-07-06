@@ -12,7 +12,7 @@ def create_eol_anchors(output_csv: Path, active_dataset: str):
         {
             "experiment_id": f"{active_dataset}_experiment",
             "fruit_id": f"F{i:02d}",
-            "eol_timestamp": "2026-03-26 08:00:00",
+            "eol_timestamp": "2026-03-26 08:00:00", # CHANGE THE END OF LIFE TIMESTAMP HERE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             "eol_basis": "visual",
             "proposed_by": "cong",
             "reviewed_by": "",

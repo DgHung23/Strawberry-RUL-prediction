@@ -21,6 +21,7 @@ processed_root = PROJECT_ROOT / configs["processed_dir"]
 
 input_dir = PROJECT_ROOT / dataset_cfg["output_dir"]
 output_dir = PROJECT_ROOT / "data" / "02_processed" / dataset_cfg["mask_dir"]
+avocado_template_dir = processed_root / "template_avocado"
 
 # Define wider color ranges for avocado candidates in HSV color space.
 # Dark green avocado skin can be very deep, with some brown/ripening patches.
@@ -48,6 +49,7 @@ def natural_sort_key(path):
     stem = os.path.splitext(os.path.basename(path))[0].lower()
     parts = re.split(r'(\d+)', stem)
     return [int(part) if part.isdigit() else part for part in parts]
+
 
 
 def is_cropped_folder(folder_name):
@@ -222,6 +224,151 @@ def largest_component_mask(mask):
 
     largest_label = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
     return (labels == largest_label).astype('uint8') * 255
+
+
+def read_binary_mask(mask_path, img_h, img_w):
+    template = cv2.imread(str(mask_path), cv2.IMREAD_GRAYSCALE)
+    if template is None:
+        return None
+    if template.shape[:2] != (img_h, img_w):
+        template = cv2.resize(template, (img_w, img_h), interpolation=cv2.INTER_NEAREST)
+    template = np.where(template > 0, 255, 0).astype(np.uint8)
+    if cv2.countNonZero(template) == 0:
+        return None
+    return template
+
+
+def load_avocado_template_masks(template_dir, fallback_mask_output_dir, base_name, img_h, img_w):
+    """Load hand-drawn avocado templates by index, falling back to old frame masks."""
+
+    template_dir = Path(template_dir)
+    fallback_mask_output_dir = Path(fallback_mask_output_dir)
+    templates = {}
+    loaded_from_template_dir = False
+
+    for fruit_idx in range(1, 7):
+        candidate_paths = [
+            template_dir / f"avocado_{fruit_idx}_mask.png",
+            template_dir / f"avocado_{fruit_idx}.png",
+            template_dir / f"template_avocado_{fruit_idx}_mask.png",
+            template_dir / f"template_avocado_{fruit_idx}.png",
+        ]
+        for mask_path in candidate_paths:
+            if not mask_path.exists():
+                continue
+            template = read_binary_mask(mask_path, img_h, img_w)
+            if template is not None:
+                templates[fruit_idx] = template
+                loaded_from_template_dir = True
+                break
+
+    if templates:
+        return templates, "template"
+
+    for fruit_idx in range(1, 7):
+        mask_path = fallback_mask_output_dir / f"{base_name}_avocado_{fruit_idx}_mask.png"
+        if not mask_path.exists():
+            continue
+        template = read_binary_mask(mask_path, img_h, img_w)
+        if template is not None:
+            templates[fruit_idx] = template
+
+    source = "previous-mask" if templates and not loaded_from_template_dir else "none"
+    return templates, source
+
+
+def bounding_rect_from_mask(mask, pad, img_h, img_w):
+    points = cv2.findNonZero(mask)
+    if points is None:
+        return None
+
+    x, y, w_box, h_box = cv2.boundingRect(points)
+    x_start = max(0, x - pad)
+    y_start = max(0, y - pad)
+    x_end = min(img_w, x + w_box + pad)
+    y_end = min(img_h, y + h_box + pad)
+    return x_start, y_start, x_end, y_end
+
+
+def create_grabcut_mask_avocado_template(roi, roi_template):
+    roi_hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    template = np.where(roi_template > 0, 255, 0).astype(np.uint8)
+    grabcut_mask = np.full(roi.shape[:2], cv2.GC_PR_BGD, dtype=np.uint8)
+
+    template_soft = cv2.morphologyEx(template, cv2.MORPH_CLOSE, avocado_close_kernel)
+    probable_fg = cv2.dilate(template_soft, kernel, iterations=2) > 0
+    sure_fg = cv2.erode(template_soft, small_kernel, iterations=2) > 0
+    sure_bg = cv2.dilate(template_soft, grabcut_outer_kernel, iterations=1) == 0
+    table_bg = is_surface_background(roi_hsv)
+    foreign_bg = is_foreign_foreground(roi_hsv)
+
+    grabcut_mask[probable_fg] = cv2.GC_PR_FGD
+    grabcut_mask[sure_fg] = cv2.GC_FGD
+    grabcut_mask[sure_bg | ((table_bg | foreign_bg) & ~probable_fg)] = cv2.GC_BGD
+
+    grabcut_mask[0, :] = cv2.GC_BGD
+    grabcut_mask[-1, :] = cv2.GC_BGD
+    grabcut_mask[:, 0] = cv2.GC_BGD
+    grabcut_mask[:, -1] = cv2.GC_BGD
+
+    if not np.any((grabcut_mask == cv2.GC_FGD) | (grabcut_mask == cv2.GC_PR_FGD)):
+        grabcut_mask[template > 0] = cv2.GC_PR_FGD
+
+    return grabcut_mask
+
+
+def refine_avocado_mask_with_template(mask_res, roi, roi_template):
+    template = np.where(roi_template > 0, 255, 0).astype(np.uint8)
+    template_limit = cv2.dilate(template, grabcut_outer_kernel, iterations=1) > 0
+
+    refined = mask_res.copy()
+    refined[~template_limit] = 0
+    refined = refine_avocado_mask(refined, roi, template)
+    refined[~template_limit] = 0
+    refined = fill_holes(refined * 255) // 255
+    refined = cv2.morphologyEx(refined, cv2.MORPH_CLOSE, avocado_close_kernel)
+    refined = cv2.morphologyEx(refined, cv2.MORPH_OPEN, small_kernel)
+    return largest_component_mask(refined.astype(np.uint8) * 255) // 255
+
+
+def smooth_alpha_from_mask(binary_mask, feather_radius=3.0):
+    """Create an anti-aliased alpha edge from a binary fruit mask."""
+
+    clean_mask = np.where(binary_mask > 0, 255, 0).astype(np.uint8)
+    clean_mask = cv2.medianBlur(clean_mask, 5)
+    clean_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_CLOSE, close_kernel)
+    clean_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_OPEN, small_kernel)
+
+    inside_dist = cv2.distanceTransform(clean_mask, cv2.DIST_L2, 5)
+    outside_dist = cv2.distanceTransform(255 - clean_mask, cv2.DIST_L2, 5)
+    signed_dist = inside_dist - outside_dist
+
+    alpha_float = np.clip((signed_dist + feather_radius) / (2.0 * feather_radius), 0.0, 1.0)
+    soft_alpha = (alpha_float * 255).astype(np.uint8)
+    soft_alpha[clean_mask == 255] = np.maximum(soft_alpha[clean_mask == 255], 180)
+    soft_alpha[inside_dist >= feather_radius] = 255
+
+    binary_for_mask = np.where(clean_mask > 0, 255, 0).astype(np.uint8)
+    return soft_alpha, binary_for_mask
+
+
+def apply_soft_alpha_to_roi(roi, alpha_mask):
+    """Use nearby fruit colors on semi-transparent edge pixels to avoid background fringing."""
+
+    if alpha_mask is None:
+        return roi
+
+    edge_pixels = ((alpha_mask > 0) & (alpha_mask < 255)).astype(np.uint8) * 255
+    if cv2.countNonZero(edge_pixels) == 0:
+        b_channel, g_channel, r_channel = cv2.split(roi)
+        return cv2.merge([b_channel, g_channel, r_channel, alpha_mask])
+
+    decontaminated = cv2.inpaint(roi, edge_pixels, 3, cv2.INPAINT_TELEA)
+    visible_edge = edge_pixels > 0
+    rgb = roi.copy()
+    rgb[visible_edge] = decontaminated[visible_edge]
+    b_channel, g_channel, r_channel = cv2.split(rgb)
+    return cv2.merge([b_channel, g_channel, r_channel, alpha_mask])
 
 
 def create_grabcut_mask_avocado(roi, roi_support):
@@ -401,6 +548,7 @@ def parse_args():
     parser.add_argument('--start-name', default=None, help='Process filenames whose stem is >= this value.')
     parser.add_argument('--end-name', default=None, help='Process filenames whose stem is <= this value.')
     parser.add_argument('--keep-existing', action='store_true', help='Do not delete old segmented PNGs for frames being reprocessed.')
+    parser.add_argument('--avocado-template-dir', default=avocado_template_dir, help='Folder containing hand-drawn avocado template masks named avocado_1_mask.png ... avocado_6_mask.png.')
     return parser.parse_args()
 
 
@@ -492,8 +640,26 @@ def main():
             current_filename = os.path.basename(img_path)
             prev_img_path = image_paths[idx_frame - 1] if idx_frame > 0 else None
 
+            object_label = active_dataset
+
+            img = cv2.imread(img_path)
+            if img is None:
+                print(f'Cannot read image: {img_path}')
+                continue
+
+            h, w = img.shape[:2]
+            avocado_template_masks = {}
+            avocado_template_source = "none"
+            if active_dataset == "avocado":
+                avocado_template_masks, avocado_template_source = load_avocado_template_masks(
+                    args.avocado_template_dir,
+                    mask_output_dir,
+                    base_name,
+                    h,
+                    w,
+                )
+
             if not args.keep_existing:
-                object_label = active_dataset
                 for old_output_path in glob.glob(os.path.join(temp_args.output_dir, f'{base_name}_{object_label}_*.png')):
                     try:
                         os.remove(old_output_path)
@@ -505,13 +671,9 @@ def main():
                     except OSError:
                         pass
 
-            img = cv2.imread(img_path)
-            if img is None:
-                print(f'Cannot read image: {img_path}')
-                continue
-
-            h, w = img.shape[:2]
             print(f'--- Processing image: {base_name} ({w}x{h}) ---')
+            if active_dataset == "avocado":
+                print(f'    Loaded {len(avocado_template_masks)} avocado masks for indexed segmentation from: {avocado_template_source}')
 
             # Check if this frame needs mask regeneration
             regen_frame = regenerate_mask_map.get(current_filename, True)
@@ -522,7 +684,53 @@ def main():
 
             segmented_count = 0
 
-            if regen_frame:
+            if active_dataset == "avocado" and avocado_template_masks:
+                # Case 1A: Use previously indexed template masks, then segment each avocado ROI.
+                for fruit_idx in sorted(avocado_template_masks):
+                    template_mask = avocado_template_masks[fruit_idx]
+                    rect = bounding_rect_from_mask(template_mask, pad=28, img_h=h, img_w=w)
+                    if rect is None:
+                        continue
+
+                    x_start, y_start, x_end, y_end = rect
+                    roi = img[y_start:y_end, x_start:x_end]
+                    roi_template = template_mask[y_start:y_end, x_start:x_end]
+
+                    if roi.size == 0 or cv2.countNonZero(roi_template) == 0:
+                        continue
+
+                    mask = create_grabcut_mask_avocado_template(roi, roi_template)
+                    bgdModel = np.zeros((1, 65), np.float64)
+                    fgdModel = np.zeros((1, 65), np.float64)
+
+                    cv2.grabCut(roi, mask, None, bgdModel, fgdModel, 8, cv2.GC_INIT_WITH_MASK)
+
+                    mask_res = np.where((mask == cv2.GC_FGD) | (mask == cv2.GC_PR_FGD), 1, 0).astype('uint8')
+                    mask_res = refine_avocado_mask_with_template(mask_res, roi, roi_template)
+
+                    if np.count_nonzero(mask_res) < max(200, int(0.0002 * h * w)):
+                        continue
+
+                    soft_alpha, final_mask = smooth_alpha_from_mask(mask_res * 255)
+
+                    # Save full-size binary mask for downstream validation/tracking.
+                    full_size_mask = np.zeros((h, w), dtype=np.uint8)
+                    full_size_mask[y_start:y_end, x_start:x_end] = final_mask
+
+                    mask_filename = f'{base_name}_{object_label}_{fruit_idx}_mask.png'
+                    mask_path = os.path.join(mask_output_dir, mask_filename)
+                    cv2.imwrite(mask_path, full_size_mask)
+
+                    # Save transparent fruit crop with a soft alpha edge to avoid jagged borders.
+                    b_channel, g_channel, r_channel = cv2.split(roi)
+                    roi_transparent = apply_soft_alpha_to_roi(roi, soft_alpha)
+
+                    output_filename = f'{base_name}_{object_label}_{fruit_idx}.png'
+                    output_path = os.path.join(temp_args.output_dir, output_filename)
+                    cv2.imwrite(output_path, roi_transparent)
+
+                    segmented_count += 1
+            elif regen_frame:
                 # Case 1: Run Candidate Mask -> GrabCut (segment) -> save new mask
                 hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
                 thresh = create_candidate_mask(hsv, dataset=active_dataset)
@@ -576,8 +784,12 @@ def main():
 
                     # Smooth mask border
                     clean_mask = mask_res * 255
-                    blurred = cv2.GaussianBlur(clean_mask, (15, 15), 0)
-                    final_mask = np.where(blurred > 127, 255, 0).astype(np.uint8)
+                    if active_dataset == "avocado":
+                        alpha_mask, final_mask = smooth_alpha_from_mask(clean_mask)
+                    else:
+                        blurred = cv2.GaussianBlur(clean_mask, (15, 15), 0)
+                        final_mask = np.where(blurred > 127, 255, 0).astype(np.uint8)
+                        alpha_mask = final_mask
 
                     # Save full-size mask
                     full_size_mask = np.zeros((h, w), dtype=np.uint8)
@@ -589,7 +801,7 @@ def main():
 
                     # Save transparent fruit crop
                     b_channel, g_channel, r_channel = cv2.split(roi)
-                    roi_transparent = cv2.merge([b_channel, g_channel, r_channel, final_mask])
+                    roi_transparent = apply_soft_alpha_to_roi(roi, alpha_mask)
                     
                     output_filename = f'{base_name}_{object_label}_{fruit_idx}.png'
                     output_path = os.path.join(temp_args.output_dir, output_filename)
@@ -655,8 +867,12 @@ def main():
                     clean_mask = cv2.morphologyEx(clean_mask, cv2.MORPH_OPEN, kernel_ellipse)
 
                     # Blur and threshold for smooth border
-                    blurred = cv2.GaussianBlur(clean_mask, (15, 15), 0)   
-                    final_mask = np.where(blurred > 127, 255, 0).astype(np.uint8) # 127
+                    if active_dataset == "avocado":
+                        alpha_mask, final_mask = smooth_alpha_from_mask(clean_mask)
+                    else:
+                        blurred = cv2.GaussianBlur(clean_mask, (15, 15), 0)   
+                        final_mask = np.where(blurred > 127, 255, 0).astype(np.uint8) # 127
+                        alpha_mask = final_mask
 
                     # Save full-size mask
                     full_size_mask = np.zeros((h, w), dtype=np.uint8)
@@ -668,7 +884,7 @@ def main():
 
                     # Save transparent fruit crop
                     b_channel, g_channel, r_channel = cv2.split(roi)
-                    roi_transparent = cv2.merge([b_channel, g_channel, r_channel, final_mask])
+                    roi_transparent = apply_soft_alpha_to_roi(roi, alpha_mask)
                     
                     output_filename = f'{base_name}_{object_label}_{idx}.png'
                     output_path = os.path.join(temp_args.output_dir, output_filename)

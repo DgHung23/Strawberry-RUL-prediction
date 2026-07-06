@@ -23,30 +23,30 @@ def run_step(name, func):
 
 def main():
     # Step 1: Extract frames from videos
-    run_step("Extract Frames", extracting_frames_main)
+    # run_step("Extract Frames", extracting_frames_main)
 
-    # Step 2: Crop images to focus on strawberries
+    # Step 1: Crop images to focus on strawberries
     run_step("Crop Images", crop_images_main)
+    
+    # Step 2: Perform frame differencing after masks exist for QC
+    run_step("Frame Differencing", frame_differencing_main)
 
     # Step 3: Segment strawberries from the background
     run_step("Segmentation", segmentation_main)
 
-    # Step 4: Perform frame differencing after masks exist for QC
-    run_step("Frame Differencing", frame_differencing_main)
-
-    # Step 5: Assign unique IDs to each strawberry
+    # Step 4: Assign unique IDs to each strawberry
     run_step("Assign IDs", assign_id_main)
 
-    # Step 6: Generate end-of-life (EOL) anchors for strawberries
+    # Step 5: Generate end-of-life (EOL) anchors for strawberries
     run_step("Generate EOL Anchors", eol_main)
 
-    # Step 7: Generate manifests for the dataset
+    # Step 6: Generate manifests for the dataset
     run_step("Generate Manifests", manifests_main)
 
-    # Step 8: Label remaining useful life (RUL) for each strawberry
+    # Step 7: Label remaining useful life (RUL) for each strawberry
     run_step("Label RUL", label_rul_main)
 
-    # Step 9: Split data into training, validation, and test sets
+    # Step 8: Split data into training, validation, and test sets
     run_step("Split Data", split_data_main)
 
     print("Preprocessing pipeline completed successfully")
