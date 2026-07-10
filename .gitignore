@@ -1,13 +1,14 @@
 # Keep only the top-level data folder structure in Git.
-data/**
-!data/
-!data/01_raw/
-!data/02_processed/
-!data/03_split/
-!data/01_raw/.gitkeep
-!data/02_processed/.gitkeep
-!data/03_split/.gitkeep
-
+# data/**
+# !data/
+# !data/01_raw/
+# !data/02_processed/
+# !data/03_split/
+# !data/01_raw/.gitkeep
+# !data/02_processed/.gitkeep
+# !data/03_split/.gitkeep
+data/01_raw/
+data/02_processed/
 # Runtime logs and private stage journals.
 logs/**
 
@@ -24,3 +25,15 @@ models/Strawberry_models/
 # Stale root-level Stage 1.5 reports from before sample/full output split.
 output/reports/stage_1_5/image_inventory_summary.md
 output/reports/stage_1_5/stage_1_5_run_debug.json
+
+# Local avocado U2Net tuning and smoke-test artifacts.
+output/u2net_avocado_*/
+output/reports/avocado_full_test_smoke*/
+output/reports/processed/u2net_avocado_*/
+output/reports/processed/*_smoke*/
+data/02_processed/*_smoke*/
+
+# Ignore the local virtual environment folder.
+.venv/
+venv/
+env/
