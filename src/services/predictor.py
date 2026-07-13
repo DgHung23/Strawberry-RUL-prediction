@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 from threading import Lock
@@ -7,16 +7,22 @@ import numpy as np
 import torch
 
 from stage4_training.model_D.model import StrawberryRULModelD
+# TODO: Import Avocado models when implemented
+
 from utils_app.image_utils import numpy_to_tensor, remove_alpha
 
 
-class StrawberryRULPredictor:
+class FruitRULPredictor:
     def __init__(self, config: dict, project_root: Path):
         self.config = config
         self.project_root = project_root
-        self.image_size = int(config.get("image_size", 224))
+        self.fruit_type = config.get("active_dataset", "strawberry")
+        self.image_size = int(config.get("image", {}).get("crop_width", 224)) # fallback to crop_width or 224
         self.device = self._resolve_device(config.get("device", "cpu"))
-        self.model_path = self._resolve_model_path(config.get("model_path"))
+        
+        # Look for model_path in model dict or root config
+        provided_model_path = config.get("model", {}).get("path") or config.get("model_path")
+        self.model_path = self._resolve_model_path(provided_model_path)
         self.model: torch.nn.Module | None = None
         self._lock = Lock()
 
@@ -28,7 +34,10 @@ class StrawberryRULPredictor:
 
     def _resolve_model_path(self, model_path: str | None) -> Path:
         if not model_path:
-            return self.project_root / "models" / "model_D" / "best_model.pth"
+            # Fallback based on fruit type
+            if self.fruit_type == "avocado":
+                return self.project_root / "models" / "avocado" / "numeric_baselines" / "best_model.pth"
+            return self.project_root / "models" / "strawberry" / "model_D" / "best_model.pth"
         path = Path(model_path)
         return path if path.is_absolute() else self.project_root / path
 
@@ -51,15 +60,20 @@ class StrawberryRULPredictor:
             if self.model is not None:
                 return self.model
 
-            model = StrawberryRULModelD().to(self.device)
+            if self.fruit_type == "strawberry":
+                model = StrawberryRULModelD().to(self.device)
+            else:
+                # TODO: instantiate avocado models
+                raise NotImplementedError(f"Model for {self.fruit_type} not fully implemented yet.")
+                
             model.load_state_dict(self._load_state_dict(), strict=False)
             model.eval()
             self.model = model
             return model
 
-    def predict(self, segmented_strawberry: np.ndarray) -> tuple[float, float]:
+    def predict(self, segmented_fruit: np.ndarray) -> tuple[float, float]:
         model = self._ensure_model()
-        clean_image = remove_alpha(segmented_strawberry)
+        clean_image = remove_alpha(segmented_fruit)
         image_tensor = numpy_to_tensor(clean_image, self.image_size, self.device)
         images_seq = image_tensor.unsqueeze(0).unsqueeze(0)
 
