@@ -8,5 +8,8 @@ scikit-learn
 matplotlib
 tqdm
 ipykernel
+fastapi
+uvicorn
+python-multipart
 
 ltn test
