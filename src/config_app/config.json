@@ -2,7 +2,7 @@
     "active_dataset": "strawberry",
 
     "model": {
-        "path": "models/model_D/best_model.pth"
+        "path": "models/strawberry/model_D/best_model.pth"
     },
 
     "image": {

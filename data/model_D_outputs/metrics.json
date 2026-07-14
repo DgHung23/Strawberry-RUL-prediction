@@ -1,0 +1,10 @@
+{
+  "model": "Model_D_MobileNetV2_CBAM_GRU",
+  "mae": 10.685460456176646,
+  "rmse": 12.76270866394043,
+  "mape": 14.683443069458008,
+  "r2": 0.9493644631964667,
+  "train_sequences": 2614,
+  "val_sequences": 672,
+  "test_sequences": 598
+}

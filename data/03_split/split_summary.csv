@@ -1,0 +1,4 @@
+split,strawberry_ids,num_strawberries,num_images
+train,F01 F02 F03 F04,4,484
+val,F05,1,121
+test,F06,1,121
