@@ -1,0 +1,19 @@
+﻿{
+    "active_dataset": "strawberry",
+
+    "model": {
+        "path": "models/model_D/best_model.pth"
+    },
+
+    "image": {
+        "crop_width": 1116,
+        "crop_height": 930,
+        "max_side": 900
+    },
+
+    "frame_diff": {
+        "motion_threshold": 0.015,
+        "component_threshold": 0.006,
+        "pixel_threshold": 45
+    }
+}
