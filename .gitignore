@@ -16,14 +16,14 @@ data/02_processed/avocado/*
 data/outputs/avocado/*
 data/outputs/strawberry/*
 
-data/01_raw/avocado/.gitkeep
-data/01_raw/strawberry/.gitkeep
-data/03_split/avocado/.gitkeep
-data/03_split/strawberry/.gitkeep
-data/02_processed/strawberry/.gitkeep
-data/02_processed/avocado/.gitkeep
-data/outputs/avocado/.gitkeep
-data/outputs/strawberry/.gitkeep
+!data/01_raw/avocado/.gitkeep
+!data/01_raw/strawberry/.gitkeep
+!data/03_split/avocado/.gitkeep
+!data/03_split/strawberry/.gitkeep
+!data/02_processed/strawberry/.gitkeep
+!data/02_processed/avocado/.gitkeep
+!data/outputs/avocado/.gitkeep
+!data/outputs/strawberry/.gitkeep
 # Runtime logs and private stage journals.
 logs/**
 
