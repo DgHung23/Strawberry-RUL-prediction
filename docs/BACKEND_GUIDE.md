@@ -5,7 +5,7 @@ This guide explains how to run the backend server, where the API is located, and
 The backend uses FastAPI. The trained model file is:
 
 ```text
-...\Strawberry-RUL-prediction\models\model_D\best_model.pth
+...\Strawberry-RUL-prediction\models\strawberry\model_D\best_model.pth
 ```
 
 The backend receives one image, segments the strawberry, runs the trained Model D checkpoint, and returns the Remaining Useful Life prediction as JSON.
@@ -29,7 +29,7 @@ src/services/predictor.py          PyTorch model loading and prediction
 src/services/postprocess.py        Output formatting
 src/schemas/response.py            Standard JSON responses
 src/utils_app/image_utils.py       Shared image utilities
-models/model_D/best_model.pth      Trained model checkpoint
+models/strawberry/model_D/best_model.pth      Trained model checkpoint
 ```
 
 ## 2. Install Dependencies
@@ -57,7 +57,7 @@ python-multipart
 Before running the API, make sure the trained model exists:
 
 ```powershell
-Test-Path models\model_D\best_model.pth
+Test-Path models\strawberry\model_D\best_model.pth
 ```
 
 Expected result:
@@ -69,7 +69,7 @@ True
 The backend predictor loads this checkpoint:
 
 ```text
-models/model_D/best_model.pth
+models/strawberry/model_D/best_model.pth
 ```
 
 If CUDA is available, the backend can use GPU. If CUDA is not available, it automatically falls back to CPU.
@@ -93,6 +93,16 @@ The backend base URL is:
 ```text
 http://127.0.0.1:8000
 ```
+If you want to test on the mobile phone (android):
+
+```powershell
+py -3.11 -m uvicorn app:app --app-dir src --host 0.0.0.0 --port 8000
+```
+The backend base URL is:
+
+```text
+http://192.168...your IPV4..:8000
+```
 
 ## 5. Check if the API is Running
 
@@ -106,6 +116,18 @@ Or run:
 
 ```powershell
 curl.exe http://127.0.0.1:8000/api/health
+```
+If test on mobile phone:
+Open this URL in a browser:
+
+```text
+http://192.168...your IPV4...:8000/api/health
+```
+
+Or run:
+
+```powershell
+curl.exe http://192.168....your IPV4...:8000/api/health
 ```
 
 Expected response:
@@ -132,7 +154,11 @@ Full URL:
 ```text
 http://127.0.0.1:8000/api/health
 ```
+If test on mobile phone:
 
+```text
+http://192.168....your IPV4...:8000/api/health
+```
 Use this endpoint to check whether the backend server is running.
 
 ### Predict Strawberry RUL
@@ -146,7 +172,11 @@ Full URL:
 ```text
 http://127.0.0.1:8000/api/predict
 ```
+If test on mobile phone:
 
+```text
+http://192.168....your IPV4...:8000/api/predict
+```
 Request type:
 
 ```text
@@ -168,14 +198,18 @@ Replace `sample_strawberry.jpg` with your image path:
 ```powershell
 curl.exe -X POST "http://127.0.0.1:8000/api/predict" -F "file=@sample_strawberry.jpg"
 ```
+If test on mobile phone:
 
+```text
+curl.exe -X POST "http://192.168....your IPV4...:8000/api/predict" -F "file=@sample_strawberry.jpg"
+```
 Valid strawberry image response:
 
 ```json
 {
   "success": true,
   "remaining_useful_life": 17.83,
-  "confidence": 0.9
+  "confidence": 0.9 (model not return conf, you can leave it)
 }
 ```
 
@@ -197,7 +231,11 @@ The frontend should send the image as `multipart/form-data` to:
 ```text
 http://127.0.0.1:8000/api/predict
 ```
+If test on mobile phone:
 
+```text
+http://192.168....your IPV4...:8000/api/predict
+```
 The field name must be:
 
 ```text
