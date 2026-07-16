@@ -28,10 +28,10 @@ dlls_to_load = [
     "cublas64_12.dll",
     "cublasLt64_12.dll",
     # cuDNN Core
-    "cudnn64_9.dll",
-    "cudnn_ops64_9.dll",
-    "cudnn_cnn64_9.dll",
-    "cudnn_adv64_9.dll"
+    "cudnn64_8.dll",
+    "cudnn_ops_infer64_8.dll",
+    "cudnn_cnn_infer64_8.dll",
+    "cudnn_adv_infer64_8.dll"
 ]
 
 for dll in dlls_to_load:

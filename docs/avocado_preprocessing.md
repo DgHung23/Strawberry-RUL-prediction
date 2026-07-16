@@ -53,3 +53,24 @@ If you already ran the full pipeline once and want to tweak or rerun only a spec
 - `--output-dir`: Base directory for outputs (Default: `data/02_processed/avocado`).
 - `--min-area`: Minimum bounding box area required to pass the U2Net retry gate (Default: `100000`).
 - `--disable-grayworld` / `--disable-clahe`: Disables image enhancements.
+
+## Hardware & Environment Compatibility
+
+Because `rembg` relies on ONNX Runtime (`onnxruntime-gpu`) for neural network inference, strict alignment between your NVIDIA drivers, CUDA Toolkit, and cuDNN libraries is required.
+
+> [!WARNING]
+> If you experience `Error 126` or immediate fallback to the CPU, it is almost certainly a mismatch between your cuDNN version and your `onnxruntime-gpu` version.
+
+### Known Working Configurations
+
+**Configuration 1: CUDA 12.x + cuDNN 8.x (Current Environment)**
+- **CUDA Toolkit:** 12.1
+- **cuDNN:** 8.9.x (e.g., `nvidia-cudnn-cu12==8.9.7.29`)
+- **Required ONNX Version:** `onnxruntime-gpu==1.17.1` or `1.18.1`
+- *Note:* The manual DLL loader in `scripts/phase3_1_segmentation.py` is currently configured for this environment, explicitly seeking `cudnn64_8.dll`.
+
+**Configuration 2: CUDA 13.x (or 12.x) + cuDNN 9.x**
+- **CUDA Toolkit:** 12.x or 13.x
+- **cuDNN:** 9.x
+- **Required ONNX Version:** `onnxruntime-gpu>=1.19.0`
+- *Note:* If you move this project to a machine with cuDNN 9, you **must** update the manual DLL loader at the top of `scripts/phase3_1_segmentation.py` to target `cudnn64_9.dll` instead of `cudnn64_8.dll`, and you should upgrade ONNX Runtime to `>=1.19.0`.
