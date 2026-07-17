@@ -5,6 +5,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from .io import display_path
+
 Image = None
 try:
     from PIL import Image
@@ -30,7 +32,7 @@ def plot_time_series(df: pd.DataFrame, timestamp_col: str, value_col: str, outpu
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_histogram(df: pd.DataFrame, column: str, output_path: Path, title: str, bins: int = 20) -> None:
@@ -47,7 +49,7 @@ def plot_histogram(df: pd.DataFrame, column: str, output_path: Path, title: str,
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_counts_by_column(df: pd.DataFrame, column: str, output_path: Path, title: str) -> None:
@@ -62,7 +64,7 @@ def plot_counts_by_column(df: pd.DataFrame, column: str, output_path: Path, titl
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_frame_counts_by_date(frame_manifest: pd.DataFrame, output_path: Path) -> None:
@@ -81,7 +83,7 @@ def plot_frame_counts_by_date(frame_manifest: pd.DataFrame, output_path: Path) -
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_frame_counts_by_date_and_fruit(frame_manifest: pd.DataFrame, output_path: Path) -> None:
@@ -106,7 +108,7 @@ def plot_frame_counts_by_date_and_fruit(frame_manifest: pd.DataFrame, output_pat
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_mask_valid_ratio_over_time(frame_manifest: pd.DataFrame, output_path: Path) -> None:
@@ -129,7 +131,7 @@ def plot_mask_valid_ratio_over_time(frame_manifest: pd.DataFrame, output_path: P
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_mask_valid_over_time(frame_manifest: pd.DataFrame, output_path: Path) -> None:
@@ -151,7 +153,7 @@ def plot_mask_valid_over_time(frame_manifest: pd.DataFrame, output_path: Path) -
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_roi_position_distribution(excluded_frames: pd.DataFrame, output_path: Path) -> None:
@@ -169,7 +171,7 @@ def plot_roi_position_distribution(excluded_frames: pd.DataFrame, output_path: P
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_temporal_image_strip(df: pd.DataFrame, fruit_id: str, output_path: Path) -> None:
@@ -200,7 +202,7 @@ def plot_temporal_image_strip(df: pd.DataFrame, fruit_id: str, output_path: Path
         canvas.paste(img, (x_offset, 0))
         x_offset += img.width
     canvas.save(output_path)
-    print(f'Saved image strip: {output_path}')
+    print(f'Saved image strip: {display_path(output_path)}')
 
 
 def plot_rul_distribution_by_fruit(labels: pd.DataFrame, output_path: Path) -> None:
@@ -226,7 +228,7 @@ def plot_boxplot(df: pd.DataFrame, category_col: str, value_col: str, output_pat
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_firmness_trend(labels: pd.DataFrame, output_path: Path) -> None:
@@ -251,11 +253,24 @@ def plot_scatter(df: pd.DataFrame, x_col: str, y_col: str, output_path: Path, ti
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_color_trends(labels: pd.DataFrame, output_dir: Path) -> None:
-    possible = ['r_mean', 'g_mean', 'b_mean', 'red_mean', 'green_mean', 'blue_mean']
+    possible = [
+        'color_r_mean',
+        'color_g_mean',
+        'color_b_mean',
+        'lab_L',
+        'lab_a',
+        'lab_b',
+        'r_mean',
+        'g_mean',
+        'b_mean',
+        'red_mean',
+        'green_mean',
+        'blue_mean',
+    ]
     cols = [c for c in possible if c in labels.columns]
     if not cols or labels.empty:
         return
@@ -290,7 +305,7 @@ def plot_roi_layout_comparison(frame_manifest: pd.DataFrame, output_path: Path) 
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_eol_anchor_status(eol_anchors: pd.DataFrame, output_path: Path) -> None:
@@ -316,7 +331,7 @@ def plot_eol_anchor_status(eol_anchors: pd.DataFrame, output_path: Path) -> None
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_eol_timestamp_distribution(eol_anchors: pd.DataFrame, output_path: Path) -> None:
@@ -346,7 +361,7 @@ def plot_eol_timestamp_distribution(eol_anchors: pd.DataFrame, output_path: Path
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_mapping_delta_histogram(numeric_mapping: pd.DataFrame, output_path: Path) -> None:
@@ -363,7 +378,7 @@ def plot_mapping_delta_histogram(numeric_mapping: pd.DataFrame, output_path: Pat
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_mapping_method_counts(numeric_mapping: pd.DataFrame, output_path: Path) -> None:
@@ -388,7 +403,7 @@ def plot_mapping_method_counts(numeric_mapping: pd.DataFrame, output_path: Path)
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    print(f'Saved graph: {output_path}')
+    print(f'Saved graph: {display_path(output_path)}')
 
 
 def plot_numeric_mapping_status_counts(numeric_mapping: pd.DataFrame, output_path: Path) -> None:
@@ -407,7 +422,7 @@ def plot_numeric_mapping_status_counts(numeric_mapping: pd.DataFrame, output_pat
         plt.tight_layout()
         plt.savefig(output_path, dpi=150)
         plt.close()
-        print(f'Saved graph: {output_path}')
+        print(f'Saved graph: {display_path(output_path)}')
         return
     anomaly_cols = [c for c in ['temperature_anomaly', 'humidity_anomaly'] if c in numeric_mapping.columns]
     if anomaly_cols:
@@ -423,4 +438,4 @@ def plot_numeric_mapping_status_counts(numeric_mapping: pd.DataFrame, output_pat
         plt.tight_layout()
         plt.savefig(output_path, dpi=150)
         plt.close()
-        print(f'Saved graph: {output_path}')
+        print(f'Saved graph: {display_path(output_path)}')
