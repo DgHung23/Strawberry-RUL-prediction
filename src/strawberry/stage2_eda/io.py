@@ -17,12 +17,20 @@ def find_project_root(start: Optional[Path] = None) -> Path:
 
 def configure_paths(root: Optional[Path] = None) -> tuple[Path, Path, Path, Path]:
     project_root = find_project_root(root)
-    manifest_dir = project_root / 'data' / '02_processed' / 'manifests'
+    manifest_dir = project_root / 'data' / '02_processed' / 'strawberry' / 'manifests_mock'
     report_dir = project_root / 'output' / 'reports' / 'eda'
     graph_dir = project_root / 'output' / 'graphs' / 'eda'
     report_dir.mkdir(parents=True, exist_ok=True)
     graph_dir.mkdir(parents=True, exist_ok=True)
     return project_root, manifest_dir, report_dir, graph_dir
+
+
+def display_path(path: Path, root: Optional[Path] = None) -> str:
+    base = (root or find_project_root(path)).resolve()
+    try:
+        return path.resolve().relative_to(base).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
 def load_csv_if_exists(path: Path) -> pd.DataFrame:
@@ -51,4 +59,4 @@ def save_report(lines: list[str], report_dir: Path) -> None:
     output_path = report_dir / 'dataset_inventory.md'
     with output_path.open('w', encoding='utf-8') as f:
         f.write('\n'.join(lines).strip() + '\n')
-    print(f'Saved report: {output_path}')
+    print(f'Saved report: {display_path(output_path)}')
