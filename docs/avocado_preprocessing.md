@@ -31,6 +31,8 @@ The pipeline generates several intermediate and final directories under `data/02
 - `masks/`: Contains the final, perfectly rotated and centered masks.
 - `segmented/`: Contains the final output! Inside are subdirectories `F01` through `F06`, which contain the transparent, vertically aligned avocado images.
 
+Exploratory feature extraction, graphing, and visual inspection tools are documented separately in `docs/avocado_eda.md` and live under `src/avocado/stage2_eda/`. Their outputs are stored under `data/02_processed/avocado/eda/` so they do not get confused with the MVP model-ready dataset.
+
 ## Execution
 
 You can run the script via the command line. By default, it runs the **entire pipeline** and saves all intermediate and final files:
