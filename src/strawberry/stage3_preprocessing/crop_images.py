@@ -11,10 +11,10 @@ with open(CONFIG_FILE, "r", encoding="utf-8") as file:
 
 # get config
 active_dataset = configs["active_dataset"]
-PROCESSED_DIR = PROJECT_ROOT / configs["processed_dir"]
+PROCESSED_DIR = PROJECT_ROOT / "data" / "02_processed" / active_dataset
 config = configs["datasets"][active_dataset]
 RAW_INPUT_DIR = PROJECT_ROOT / config["input_dir"]
-OUTPUT_DIR = PROJECT_ROOT / config["output_dir"]
+OUTPUT_DIR = PROCESSED_DIR
 TARGET_WIDTH = config["crop"]["width"]
 TARGET_HEIGHT = config["crop"]["height"]
 IMAGE_TYPE = config["image_type"]

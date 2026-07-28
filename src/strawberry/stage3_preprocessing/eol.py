@@ -54,8 +54,8 @@ def main():
         PROJECT_ROOT
         / "data"
         / "02_processed"
-        / "manifests"
         / active_dataset
+        / "manifests"
         / "eol_anchors.csv"
     )
 

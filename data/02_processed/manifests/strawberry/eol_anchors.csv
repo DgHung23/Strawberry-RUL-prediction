@@ -1,7 +1,0 @@
-experiment_id,fruit_id,eol_timestamp,eol_basis,proposed_by,reviewed_by,approved_by,status,notes
-strawberry_experiment,F01,2026-03-26 08:00:00,visual,cong,,,approved,End of life
-strawberry_experiment,F02,2026-03-26 08:00:00,visual,cong,,,approved,End of life
-strawberry_experiment,F03,2026-03-26 08:00:00,visual,cong,,,approved,End of life
-strawberry_experiment,F04,2026-03-26 08:00:00,visual,cong,,,approved,End of life
-strawberry_experiment,F05,2026-03-26 08:00:00,visual,cong,,,approved,End of life
-strawberry_experiment,F06,2026-03-26 08:00:00,visual,cong,,,approved,End of life

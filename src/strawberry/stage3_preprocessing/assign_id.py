@@ -14,7 +14,7 @@ with open(CONFIG_FILE, "r", encoding="utf-8") as f:
 active_dataset = configs["active_dataset"]
 dataset_cfg = configs["datasets"][active_dataset]
 
-PROCESSED_ROOT = PROJECT_ROOT / "data" / "02_processed" / "strawberry"
+PROCESSED_ROOT = PROJECT_ROOT / "data" / "02_processed" / active_dataset
 
 def is_segmented_folder(folder_name):
 

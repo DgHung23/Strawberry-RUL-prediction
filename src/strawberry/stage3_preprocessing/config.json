@@ -1,11 +1,11 @@
 {
     "active_dataset": "strawberry",
-    "processed_dir": "data/02_processed",
+    "processed_dir": "data/02_processed/strawberry",
 
     "datasets": {
         "strawberry": {
-            "input_dir": "data/01_raw",
-            "output_dir": "data/02_processed/strawberry/cropped_strawberry",
+            "input_dir": "data/01_raw/strawberry",
+            "output_dir": "data/02_processed/strawberry",
 
             "crop": {
                 "width": 1116,

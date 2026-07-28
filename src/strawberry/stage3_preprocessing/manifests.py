@@ -16,7 +16,7 @@ active_dataset = configs["active_dataset"]
 dataset_cfg = configs["datasets"][active_dataset]
 
 ROOT_DIR = PROJECT_ROOT / "data" / "02_processed" / active_dataset
-MANIFEST_DIR = ROOT_DIR / "manifests" / active_dataset
+MANIFEST_DIR = ROOT_DIR / "manifests"
 
 
 MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
@@ -88,13 +88,13 @@ def fruit_to_mask_name(frame_base, fruit_id):
 
     frame-1_12-26-28
         ->
-    frame-1_12-26-28_strawberry_1_mask.png
+    frame-1_12-26-28_strawberry_1.png
     """
 
     fruit_num = int(fruit_id.replace("F", ""))
 
     return (
-        f"{frame_base}_{active_dataset}_{fruit_num}_mask.png"
+        f"{frame_base}_{active_dataset}_{fruit_num}.png"
     )
 
 

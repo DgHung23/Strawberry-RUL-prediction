@@ -18,8 +18,8 @@ with open(CONFIG_FILE, "r", encoding="utf-8") as f:
 active_dataset = configs["active_dataset"]
 config = configs["datasets"][active_dataset]
 
-PROCESSED_DIR = PROJECT_ROOT / configs["processed_dir"]
-CROPPED_ROOT = PROJECT_ROOT / config["output_dir"]
+PROCESSED_DIR = PROJECT_ROOT / "data" / "02_processed" / active_dataset
+CROPPED_ROOT = PROCESSED_DIR
 
 MASK_PREFIX = config["frame_diff"].get("mask_prefix", "segmented")
 

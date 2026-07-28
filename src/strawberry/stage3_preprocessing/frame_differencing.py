@@ -1,4 +1,4 @@
-﻿"""
+"""
 Frame differencing for image sequences captured every 15 minutes.
 
 Main idea:
@@ -676,7 +676,7 @@ def main():
     """Entry point when running: python frame_differencing.py ..."""
 
     args = parse_args()
-    processed_root = PROJECT_ROOT / config.get("processed_dir", "data/02_processed")
+    processed_root = PROJECT_ROOT / "data" / "02_processed" / active_dataset
 
     if active_dataset == "strawberry":
         cropped_folders = sorted(
@@ -708,7 +708,7 @@ def main():
     for input_dir in cropped_folders:
         date_str = input_dir.name.replace("cropped_", "")
         # mask_prefix = frame_diff_cfg.get("mask_prefix", "segmented")
-        mask_dir = processed_root / config["mask_dir"]
+        mask_dir = processed_root / f"segmented_{date_str}"
         result_dir = processed_root / f"frame_differencing_results_{date_str}"
         output_csv = result_dir / f"frame_differencing_report_{date_str}.csv"
         debug_dir = result_dir / "motion_masks"

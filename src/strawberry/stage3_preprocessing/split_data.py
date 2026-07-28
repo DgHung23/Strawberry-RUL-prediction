@@ -17,7 +17,7 @@ active_dataset = configs["active_dataset"]
 
 # File labels:
 FINAL_METADATA_CSV = PROJECT_ROOT / "data" / "02_processed" / "strawberry" / "final" / "metadata.csv"
-MANIFEST_LABELS_CSV = PROJECT_ROOT / "data" / "02_processed" / "manifests" / active_dataset / "labels.csv"
+MANIFEST_LABELS_CSV = PROJECT_ROOT / "data" / "02_processed" / active_dataset / "manifests" / "labels.csv"
 DEFAULT_LABELS_CSV = FINAL_METADATA_CSV if FINAL_METADATA_CSV.exists() else MANIFEST_LABELS_CSV
 
 # folder after split:
@@ -84,16 +84,28 @@ def split_fruit_ids(strawberry_ids):
     }
     available_ids = set(strawberry_ids)
 
-    missing_ids = sorted(expected_ids - available_ids, key=fruit_id_sort_key)
-    unexpected_ids = sorted(available_ids - expected_ids, key=fruit_id_sort_key)
+    if available_ids == expected_ids:
+        return DEFAULT_SPLIT_TO_IDS
 
-    if missing_ids or unexpected_ids:
-        raise ValueError(
-            "labels.csv must contain exactly F01-F06 for this fixed split. "
-            f"Missing IDs: {missing_ids}. Unexpected IDs: {unexpected_ids}."
-        )
+    # Dynamic fallback if available fruit IDs differ from F01-F06
+    n = len(strawberry_ids)
+    if n == 0:
+        raise ValueError("No fruit IDs available to split.")
+    
+    val_idx = max(1, int(n * 0.7))
+    test_idx = max(val_idx + 1, int(n * 0.85)) if n > 2 else val_idx
+    if test_idx >= n:
+        test_idx = n - 1 if n > 1 else n
+    
+    train_ids = strawberry_ids[:val_idx]
+    val_ids = strawberry_ids[val_idx:test_idx] if test_idx > val_idx else [strawberry_ids[-1]]
+    test_ids = strawberry_ids[test_idx:] if test_idx < n else ([strawberry_ids[-1]] if len(val_ids) > 1 else [])
 
-    return DEFAULT_SPLIT_TO_IDS
+    return {
+        "train": train_ids,
+        "val": val_ids,
+        "test": test_ids,
+    }
 
 
 def get_image_paths(image_path_text, data_dir):

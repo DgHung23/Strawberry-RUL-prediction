@@ -1,10 +1,14 @@
-from extracting_frames import main as extracting_frames_main
+import sys
+from pathlib import Path
+
+# Ensure stage3_preprocessing directory is in sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from crop_images import main as crop_images_main
 from segmentation import main as segmentation_main
 from frame_differencing import main as frame_differencing_main
 from assign_id import main as assign_id_main
 from eol import main as eol_main
-from label_rul import main as label_rul_main
 from manifests import main as manifests_main
 from consolidate_final import main as consolidate_final_main
 from generate_final_labels import generate_final_labels as generate_final_labels_main
@@ -29,11 +33,11 @@ def main():
     # Step 1: Crop images to focus on strawberries
     run_step("Crop Images", crop_images_main)
     
-    # Step 2: Perform frame differencing after masks exist for QC
-    run_step("Frame Differencing", frame_differencing_main)
-
-    # Step 3: Segment strawberries from the background
+    # Step 2: Segment strawberries from the background
     run_step("Segmentation", segmentation_main)
+
+    # Step 3: Perform frame differencing and validate masks
+    run_step("Frame Differencing", frame_differencing_main)
 
     # Step 4: Assign unique IDs to each strawberry
     run_step("Assign IDs", assign_id_main)
