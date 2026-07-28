@@ -2,10 +2,20 @@ import pandas as pd
 from pathlib import Path
 import os
 
+def make_relative(p_str, project_root):
+    if pd.isna(p_str) or not p_str:
+        return ""
+    p = Path(p_str)
+    try:
+        rel = p.relative_to(project_root)
+        return str(rel).replace("\\", "/")
+    except ValueError:
+        return str(p_str).replace("\\", "/")
+
 def generate_final_labels():
     # Paths
     project_root = Path(__file__).resolve().parents[3]
-    final_dir = project_root / "data" / "02_processed" / "final"
+    final_dir = project_root / "data" / "02_processed" / "strawberry" / "final"
     manifest_csv = final_dir / "final_manifest.csv"
     
     print(f"Loading manifest from {manifest_csv}...")
@@ -37,8 +47,8 @@ def generate_final_labels():
     df["experiment_id"] = "RUL_FINAL"
     df["fruit_type"] = "strawberry"
     df["roi_id"] = df["fruit_id"]
-    df["image_path"] = df["final_path"]
-    df["raw_path"] = df["source_path"]
+    df["image_path"] = df["final_path"].apply(lambda p: make_relative(p, project_root))
+    df["raw_path"] = df["source_path"].apply(lambda p: make_relative(p, project_root))
     df["temperature_c"] = pd.NA
     df["humidity_pct"] = pd.NA
     df["firmness_avg"] = pd.NA
@@ -48,7 +58,7 @@ def generate_final_labels():
     df["eol_basis"] = "manual"
     df["label_status"] = "approved"
     
-    # Output columns list based on label_rul.py
+    # Output columns list based on label_rul.py + time_gap_hours & elapsed_hours
     output_columns = [
         "experiment_id",
         "fruit_type",
@@ -57,6 +67,8 @@ def generate_final_labels():
         "image_path",
         "raw_path",
         "timestamp",
+        "time_gap_hours",
+        "elapsed_hours",
         "eol_timestamp",
         "rul_hours",
         "temperature_c",
@@ -76,11 +88,22 @@ def generate_final_labels():
         
         output_csv = fruit_dir / "labels.csv"
         
-        fruit_df = group[output_columns].copy()
-        fruit_df = fruit_df.sort_values(by="timestamp")
+        fruit_df = group.copy().sort_values(by="timestamp").reset_index(drop=True)
         
-        fruit_df.to_csv(output_csv, index=False)
-        print(f"Saved {len(fruit_df)} labels for {fruit_id} to {output_csv}")
+        # Calculate time_gap_hours & elapsed_hours
+        first_ts = fruit_df["timestamp"].iloc[0]
+        time_gaps = [0.0]
+        for i in range(1, len(fruit_df)):
+            gap = (fruit_df["timestamp"].iloc[i] - fruit_df["timestamp"].iloc[i - 1]).total_seconds() / 3600.0
+            time_gaps.append(round(gap, 4))
+        
+        fruit_df["time_gap_hours"] = time_gaps
+        fruit_df["elapsed_hours"] = ((fruit_df["timestamp"] - first_ts).dt.total_seconds() / 3600.0).round(4)
+        
+        fruit_df_out = fruit_df[output_columns].copy()
+        
+        fruit_df_out.to_csv(output_csv, index=False)
+        print(f"Saved {len(fruit_df_out)} labels for {fruit_id} to {output_csv}")
         
     print("All labels generated successfully!")
 

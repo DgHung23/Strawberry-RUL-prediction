@@ -12,7 +12,7 @@
                 "height": 930
             },
 
-            "image_type": "frames",
+            "image_type": "strawberry",
             "mask_dir": "segmented",
             "frame_diff": {
                 "motion_threshold": 0.015,

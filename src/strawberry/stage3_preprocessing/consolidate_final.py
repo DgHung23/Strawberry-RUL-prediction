@@ -7,8 +7,8 @@ from datetime import datetime
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_PROCESSED_ROOT = PROJECT_ROOT / "data" / "02_processed" /"strawberry"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_PROCESSED_ROOT = PROJECT_ROOT / "data" / "02_processed" / "strawberry"
 DEFAULT_OUTPUT_DIR = DEFAULT_PROCESSED_ROOT / "final"
 DEFAULT_FRUIT_IDS = [f"F{i:02d}" for i in range(1, 7)]
 

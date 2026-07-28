@@ -43,12 +43,7 @@ def main():
 
     PROJECT_ROOT = Path(__file__).resolve().parents[3]
     
-    CONFIG_FILE = (
-    PROJECT_ROOT
-    / "src"
-    / "stage3_preprocessing"
-    / "config.json"
-    )
+    CONFIG_FILE = Path(__file__).resolve().parent / "config.json"
 
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
         configs = json.load(f)

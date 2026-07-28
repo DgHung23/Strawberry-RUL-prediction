@@ -8,12 +8,7 @@ import json
 # Project root directory: .../Strawberry-RUL-prediction
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-CONFIG_FILE = (
-    PROJECT_ROOT
-    / "src"
-    / "stage3_preprocessing"
-    / "config.json"
-)
+CONFIG_FILE = Path(__file__).resolve().parent / "config.json"
 
 with open(CONFIG_FILE, "r", encoding="utf-8") as f:
     configs = json.load(f)
@@ -21,8 +16,9 @@ with open(CONFIG_FILE, "r", encoding="utf-8") as f:
 active_dataset = configs["active_dataset"]
 
 # File labels:
-# image_path,date,fruit_id/strawberry_id,timestamp,rul_hours
-DEFAULT_LABELS_CSV = PROJECT_ROOT / "data" / "02_processed" / "manifests" / active_dataset / "labels.csv"
+FINAL_METADATA_CSV = PROJECT_ROOT / "data" / "02_processed" / "strawberry" / "final" / "metadata.csv"
+MANIFEST_LABELS_CSV = PROJECT_ROOT / "data" / "02_processed" / "manifests" / active_dataset / "labels.csv"
+DEFAULT_LABELS_CSV = FINAL_METADATA_CSV if FINAL_METADATA_CSV.exists() else MANIFEST_LABELS_CSV
 
 # folder after split:
 # data/03_split/train, data/03_split/val, data/03_split/test
@@ -105,13 +101,17 @@ def get_image_paths(image_path_text, data_dir):
 
     if image_path.is_absolute():
         source_image_path = image_path
-    else:
+    elif (PROJECT_ROOT / image_path).exists():
+        source_image_path = PROJECT_ROOT / image_path
+    elif (data_dir / image_path).exists():
         source_image_path = data_dir / image_path
-        if not source_image_path.exists():
-            source_image_path = data_dir.parent / image_path
+    elif (data_dir.parent / image_path).exists():
+        source_image_path = data_dir.parent / image_path
+    else:
+        source_image_path = data_dir / image_path.name
 
     try:
-        relative_image_path = source_image_path.relative_to(data_dir.parent)
+        relative_image_path = source_image_path.relative_to(data_dir)
     except ValueError:
         relative_image_path = Path(source_image_path.name)
 
@@ -215,7 +215,12 @@ def main():
     )
     args = parser.parse_args()
 
-    labels_csv = args.labels_csv.resolve()
+    labels_csv = args.labels_csv
+    if FINAL_METADATA_CSV.exists():
+        labels_csv = FINAL_METADATA_CSV
+    elif not labels_csv.exists() and MANIFEST_LABELS_CSV.exists():
+        labels_csv = MANIFEST_LABELS_CSV
+    labels_csv = labels_csv.resolve()
     data_dir = labels_csv.parent
     output_dir = args.output_dir.resolve()
 

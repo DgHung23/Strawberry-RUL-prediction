@@ -7,12 +7,7 @@ import re
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
-CONFIG_FILE = (
-    PROJECT_ROOT
-    / "src"
-    / "stage3_preprocessing"
-    / "config.json"
-)
+CONFIG_FILE = Path(__file__).resolve().parent / "config.json"
 
 with open(CONFIG_FILE, "r", encoding="utf-8") as f:
     configs = json.load(f)
@@ -20,7 +15,7 @@ with open(CONFIG_FILE, "r", encoding="utf-8") as f:
 active_dataset = configs["active_dataset"]
 dataset_cfg = configs["datasets"][active_dataset]
 
-ROOT_DIR = PROJECT_ROOT / "data" / "02_processed"
+ROOT_DIR = PROJECT_ROOT / "data" / "02_processed" / active_dataset
 MANIFEST_DIR = ROOT_DIR / "manifests" / active_dataset
 
 
@@ -210,7 +205,9 @@ def main():
             date_str = active_dataset
 
         if active_dataset == "strawberry":
-            mask_dir = ROOT_DIR / f"mask_{date_str}"
+            mask_dir = ROOT_DIR / f"segmented_{date_str}"
+            if not mask_dir.exists():
+                mask_dir = ROOT_DIR / f"mask_{date_str}"
 
         else:
             mask_dir = ROOT_DIR / f"mask_{active_dataset}"
