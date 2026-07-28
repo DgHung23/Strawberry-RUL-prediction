@@ -39,6 +39,20 @@ python main_preprocessing.py
 
 ---
 
+## Avocado EDA Tools
+
+Post-segmentation exploratory analysis now lives under `src/avocado/stage2_eda/`.
+
+```bash
+python src/avocado/stage2_eda/extract_features.py
+python src/avocado/stage2_eda/generate_eda_graphs.py
+python src/avocado/stage2_eda/visual_inspection_ui.py
+```
+
+These tools write to `data/02_processed/avocado/eda/` and are intended for QA, dataset understanding, and later feature-augmented experiments. They are separate from the MVP model-ready data construction.
+
+---
+
 ## 2. Avocado Model Implementations
 
 Based on Section 9 of the Avocado RUL specification, several deep learning architectures have been developed to evaluate performance across different modalities (image and numeric).

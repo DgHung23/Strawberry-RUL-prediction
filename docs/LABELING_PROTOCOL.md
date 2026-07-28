@@ -16,9 +16,10 @@ Each fruit has its own EOL timestamp. Do not use one global EOL for all fruits u
 
 Avocado EOL:
 
-- visual decay is clear, including darkened skin or visible spoilage; and
-- firmness has collapsed to zero or near zero across several consecutive daily measurements; and
-- the chosen timestamp is reviewed against the last 1-2 days of video.
+- the current MVP defines EOL as the first externally visible mold/spoilage onset in fruit-level segmented images;
+- daily firmness is used as supporting validation, especially when it has collapsed to zero or near zero;
+- this endpoint represents visible shelf-life/spoilage failure, not a guarantee of internal eating-quality or food-safety state;
+- the chosen timestamp is reviewed against the surrounding time-lapse frames and recorded with confidence and notes.
 
 Strawberry EOL:
 
@@ -31,6 +32,9 @@ Every label row should include an `eol_basis` value such as:
 visual
 firmness_visual
 manual_review
+visible_mold_onset
+visible_spoilage_onset
+firmness_zero_visual_confirmed
 ```
 
 ## Approval Flow
@@ -69,6 +73,23 @@ Recommended `eol_anchors.csv` fields:
 
 ```text
 experiment_id,fruit_id,eol_timestamp,eol_basis,proposed_by,reviewed_by,approved_by,status,notes
+```
+
+For the avocado MVP, the annotation tool writes `data/02_processed/avocado/labels/eol_annotations.csv` with:
+
+```text
+fruit_id
+eol_timestamp
+eol_image_path
+eol_basis
+eol_confidence
+visual_note
+firmness_latest
+firmness_date
+first_firmness_le5_date
+first_firmness_zero_date
+label_status
+updated_at
 ```
 
 ## Post-EOL Handling

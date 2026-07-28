@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Iterable
-
 import pandas as pd
+
+
+def _truthy_values(series: pd.Series) -> pd.Series:
+    if series.dtype == bool:
+        return series.fillna(False)
+    normalized = series.astype(str).str.strip().str.lower()
+    return normalized.isin({'true', '1', 'yes', 'y'})
 
 
 def validate_labels_eol_consistency(labels: pd.DataFrame, eol_anchors: pd.DataFrame) -> list[str]:
@@ -77,7 +81,8 @@ def validate_frame_manifest_roi_timeline(frame_manifest: pd.DataFrame) -> list[s
         for fruit_id, group in frame_manifest.groupby('fruit_id'):
             if group['sequence_index'].duplicated().any():
                 issues.append(f'fruit_id {fruit_id} contains duplicate sequence_index values')
-            if not group.sort_values('timestamp')['timestamp'].is_monotonic_increasing:
+            sequence_order = group.sort_values('sequence_index')
+            if not sequence_order['timestamp'].is_monotonic_increasing:
                 issues.append(f'fruit_id {fruit_id} has non-monotonic timestamp order')
 
     return issues
@@ -94,7 +99,7 @@ def validate_firmness_available(labels: pd.DataFrame) -> list[str]:
 
     strawberries = labels[labels['fruit_type'].astype(str).str.lower() == 'strawberry']
     if not strawberries.empty:
-        bad = strawberries[strawberries['firmness_available'].astype(bool)]
+        bad = strawberries[_truthy_values(strawberries['firmness_available'])]
         if not bad.empty:
             issues.append(
                 f'{len(bad)} strawberry rows have firmness_available=True; strawberry should normally use False or missing'
@@ -102,9 +107,21 @@ def validate_firmness_available(labels: pd.DataFrame) -> list[str]:
 
     avocados = labels[labels['fruit_type'].astype(str).str.lower() == 'avocado']
     if not avocados.empty and 'firmness_avg' in avocados.columns:
-        missing = avocados[~avocados['firmness_available'].astype(bool) & avocados['firmness_avg'].notna()]
+        missing = avocados[~_truthy_values(avocados['firmness_available']) & avocados['firmness_avg'].notna()]
         if not missing.empty:
             issues.append(
                 f'{len(missing)} avocado rows have firmness_avg but firmness_available=False'
             )
     return issues
+
+
+def collect_validation_issues(
+    frame_manifest: pd.DataFrame,
+    labels: pd.DataFrame,
+    eol_anchors: pd.DataFrame,
+) -> dict[str, list[str]]:
+    return {
+        'labels_eol_consistency': validate_labels_eol_consistency(labels, eol_anchors),
+        'frame_manifest_roi_timeline': validate_frame_manifest_roi_timeline(frame_manifest),
+        'firmness_availability': validate_firmness_available(labels),
+    }

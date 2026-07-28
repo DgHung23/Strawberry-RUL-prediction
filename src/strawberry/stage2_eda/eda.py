@@ -26,6 +26,7 @@ from .plots import (
     plot_color_trends,
 )
 from .report import build_basic_report
+from .validate import collect_validation_issues
 
 
 def create_graphs(
@@ -115,7 +116,19 @@ def run_from_manifests(root: Optional[Path] = None) -> None:
     numeric_mapping = load_csv_if_exists(manifest_dir / 'numeric_mapping.csv')
     excluded_frames = load_csv_if_exists(manifest_dir / 'excluded_frames.csv')
     summary = load_summary_json(manifest_dir / 'preprocessing_summary.json')
+    validation_issues = collect_validation_issues(frame_manifest, labels, eol_anchors)
 
-    lines = build_basic_report(frame_manifest, labels, eol_anchors, numeric_mapping, excluded_frames, summary, report_dir)
+    lines = build_basic_report(
+        frame_manifest,
+        labels,
+        eol_anchors,
+        numeric_mapping,
+        excluded_frames,
+        summary,
+        report_dir,
+        manifest_dir,
+        graph_dir,
+        validation_issues,
+    )
     save_report(lines, report_dir)
     create_graphs(frame_manifest, labels, excluded_frames, eol_anchors, numeric_mapping, graph_dir)
