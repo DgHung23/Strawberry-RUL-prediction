@@ -32,7 +32,7 @@ def normalize_date_folder(folder_name):
 
     return None
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 data_root = PROJECT_ROOT / "data"

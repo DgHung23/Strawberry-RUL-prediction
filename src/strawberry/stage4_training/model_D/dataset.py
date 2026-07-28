@@ -93,7 +93,7 @@ class StrawberrySequenceDataset(Dataset):
 
 if __name__ == "__main__":
     # Test dataset
-    project_root = Path(__file__).resolve().parents[3]
+    project_root = Path(__file__).resolve().parents[4]
     test_dir = project_root / "data" / "03_split" / "train"
     if test_dir.exists():
         ds = StrawberrySequenceDataset(test_dir, seq_len=5)

@@ -3,7 +3,7 @@ from pathlib import Path
 import re
 import json
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 CONFIG_FILE = Path(__file__).resolve().parent / "config.json"
 with open(CONFIG_FILE, "r", encoding="utf-8") as file:

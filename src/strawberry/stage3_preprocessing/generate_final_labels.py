@@ -4,7 +4,7 @@ import os
 
 def generate_final_labels():
     # Paths
-    project_root = Path(__file__).resolve().parents[2]
+    project_root = Path(__file__).resolve().parents[3]
     final_dir = project_root / "data" / "02_processed" / "final"
     manifest_csv = final_dir / "final_manifest.csv"
     

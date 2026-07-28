@@ -22,7 +22,7 @@ def predict(image_path, temp, humidity, checkpoint_path=None):
     model = StrawberryRULModelC().to(device)
 
     # Resolve default checkpoint path if not provided
-    project_root = Path(__file__).resolve().parents[3]
+    project_root = Path(__file__).resolve().parents[4]
     if checkpoint_path is None:
         checkpoint_path = project_root / "models" / "model_C" / "best_model.pth"
 

@@ -4,8 +4,8 @@ import random
 import numpy as np
 
 def generate_fake_env_data():
-    project_root = Path(__file__).resolve().parents[2]
-    final_dir = project_root / "data" / "02_processed" / "final"
+    project_root = Path(__file__).resolve().parents[3]
+    final_dir = project_root / "data" / "02_processed" / "strawberry" / "final"
     
     # Collect all labels.csv paths
     label_files = list(final_dir.glob("F0*/labels.csv"))

@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 
 # Resolve project paths
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 RAW_IMAGE_DIR = PROJECT_ROOT / "data" / "01_raw" / "avocado" / "output"
 MASK_DIR = PROJECT_ROOT / "data" / "excluded_masks"
 

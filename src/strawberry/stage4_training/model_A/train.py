@@ -21,7 +21,7 @@ from model import StrawberryRULModel
 
 def train():
     # ---- 1. Setup paths ----
-    project_root = Path(__file__).resolve().parents[3]
+    project_root = Path(__file__).resolve().parents[4]
     train_dir = project_root / "data" / "03_split" / "train"
     val_dir = project_root / "data" / "03_split" / "val"
     test_dir = project_root / "data" / "03_split" / "test"

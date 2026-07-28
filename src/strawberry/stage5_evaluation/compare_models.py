@@ -33,7 +33,7 @@ import matplotlib.ticker as mticker
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 MODEL_DIRS = {
     "A": {
