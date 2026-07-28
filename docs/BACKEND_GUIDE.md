@@ -93,11 +93,13 @@ The backend base URL is:
 ```text
 http://127.0.0.1:8000
 ```
+
 If you want to test on the mobile phone (android):
 
 ```powershell
 py -3.11 -m uvicorn app:app --app-dir src --host 0.0.0.0 --port 8000
 ```
+
 The backend base URL is:
 
 ```text
@@ -117,6 +119,7 @@ Or run:
 ```powershell
 curl.exe http://127.0.0.1:8000/api/health
 ```
+
 If test on mobile phone:
 Open this URL in a browser:
 
@@ -154,11 +157,13 @@ Full URL:
 ```text
 http://127.0.0.1:8000/api/health
 ```
+
 If test on mobile phone:
 
 ```text
 http://192.168....your IPV4...:8000/api/health
 ```
+
 Use this endpoint to check whether the backend server is running.
 
 ### Predict Strawberry RUL
@@ -172,11 +177,13 @@ Full URL:
 ```text
 http://127.0.0.1:8000/api/predict
 ```
+
 If test on mobile phone:
 
 ```text
 http://192.168....your IPV4...:8000/api/predict
 ```
+
 Request type:
 
 ```text
@@ -198,11 +205,13 @@ Replace `sample_strawberry.jpg` with your image path:
 ```powershell
 curl.exe -X POST "http://127.0.0.1:8000/api/predict" -F "file=@sample_strawberry.jpg"
 ```
+
 If test on mobile phone:
 
 ```text
 curl.exe -X POST "http://192.168....your IPV4...:8000/api/predict" -F "file=@sample_strawberry.jpg"
 ```
+
 Valid strawberry image response:
 
 ```json
@@ -231,11 +240,13 @@ The frontend should send the image as `multipart/form-data` to:
 ```text
 http://127.0.0.1:8000/api/predict
 ```
+
 If test on mobile phone:
 
 ```text
 http://192.168....your IPV4...:8000/api/predict
 ```
+
 The field name must be:
 
 ```text

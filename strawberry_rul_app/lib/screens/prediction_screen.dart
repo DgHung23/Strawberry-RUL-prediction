@@ -127,10 +127,13 @@ class _PredictionScreenState extends State<PredictionScreen> {
                         _buildInvalidCard(),
                       ],
                       if (_showPredictionActions) ...[
-                        SizedBox(height: _state == ScreenState.initial ? 42 : 24),
-                        _LoadingFade(enabled: _isBusy, child: _buildPredictButton()),
+                        SizedBox(
+                            height: _state == ScreenState.initial ? 42 : 24),
+                        _LoadingFade(
+                            enabled: _isBusy, child: _buildPredictButton()),
                         const SizedBox(height: 36),
-                        _LoadingFade(enabled: _isBusy, child: _buildActionButtonsRow()),
+                        _LoadingFade(
+                            enabled: _isBusy, child: _buildActionButtonsRow()),
                       ],
                       const SizedBox(height: 24),
                     ],
@@ -297,7 +300,6 @@ class _PredictionScreenState extends State<PredictionScreen> {
 
   Widget _buildResultCard() {
     final rul = _result?.remainingUsefulLifeHours;
-    final conf = _result?.confidence;
 
     return _ResultShell(
       child: Column(
@@ -310,12 +312,7 @@ class _PredictionScreenState extends State<PredictionScreen> {
           ),
           const SizedBox(height: 34),
           Text(
-            'Remaining Useful Life: ${rul != null ? '${rul.toStringAsFixed(0)} hours' : '-'}',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 26),
-          Text(
-            'Confidence: ${conf != null ? conf.toStringAsFixed(1) : '-'}',
+            'Remaining Useful Life: ${rul != null ? '${rul.toStringAsFixed(2)} hours' : '-'}',
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
           ),
         ],

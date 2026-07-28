@@ -25,7 +25,8 @@ class PredictionApiService {
   /// response, etc.) so the caller (UI layer) can show an error message.
   static Future<PredictionResult> predict(File imageFile) async {
     final uri = Uri.parse("$baseUrl$predictEndpoint");
-    final mimeType = lookupMimeType(imageFile.path) ?? 'application/octet-stream';
+    final mimeType =
+        lookupMimeType(imageFile.path) ?? 'application/octet-stream';
     final mediaType = MediaType.parse(mimeType);
 
     final request = http.MultipartRequest('POST', uri);
@@ -40,8 +41,8 @@ class PredictionApiService {
 
     try {
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 60),
-      );
+            const Duration(seconds: 60),
+          );
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {

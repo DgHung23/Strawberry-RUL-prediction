@@ -229,14 +229,27 @@ lib/services/prediction_api_service.dart
 Current value:
 
 ```dart
-static const String baseUrl = "http://10.0.2.2:8001";
+static const String baseUrl = "http://10.0.2.2:8000";
+static const String predictEndpoint = "/api/predict";
+```
+
+If test on mobile phone:
+
+```text
+static const String baseUrl = "http://192.168....your IPV4...:8000";
 static const String predictEndpoint = "/api/predict";
 ```
 
 This means the app sends prediction requests to:
 
 ```text
-http://10.0.2.2:8001/api/predict
+http://10.0.2.2:8000/api/predict
+```
+
+If test on mobile phone:
+
+```text
+http://192.168....your IPV4...:8000/api/predict
 ```
 
 Use `10.0.2.2` when the app runs inside an Android Emulator and the backend runs on your computer.
@@ -290,7 +303,7 @@ Successful backend response expected by `PredictionResult.fromJson()`:
 {
   "success": true,
   "remaining_useful_life": 50.0,
-  "confidence": 0.8
+  "confidence": 0.8 (model not return conf, you can leave it)
 }
 ```
 

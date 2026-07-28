@@ -7,8 +7,23 @@
 # !data/01_raw/.gitkeep
 # !data/02_processed/.gitkeep
 # !data/03_split/.gitkeep
-data/01_raw/
-data/02_processed/
+data/01_raw/avocado/*
+data/01_raw/strawberry/*
+data/03_split/avocado/*
+data/03_split/strawberry/*
+data/02_processed/strawberry/*
+data/02_processed/avocado/*
+data/outputs/avocado/*
+data/outputs/strawberry/*
+
+!data/01_raw/avocado/.gitkeep
+!data/01_raw/strawberry/.gitkeep
+!data/03_split/avocado/.gitkeep
+!data/03_split/strawberry/.gitkeep
+!data/02_processed/strawberry/.gitkeep
+!data/02_processed/avocado/.gitkeep
+!data/outputs/avocado/.gitkeep
+!data/outputs/strawberry/.gitkeep
 # Runtime logs and private stage journals.
 logs/**
 
@@ -20,7 +35,10 @@ __pycache__/
 # Local model artifacts can be large and machine-specific.
 models/**/*.pth
 models/**/*.pt
-models/Strawberry_models/
+models/strawberry/model_A/*
+models/strawberry/model_B/*
+models/strawberry/model_C/*
+models/strawberry/model_D/*
 
 # Stale root-level Stage 1.5 reports from before sample/full output split.
 output/reports/stage_1_5/image_inventory_summary.md
