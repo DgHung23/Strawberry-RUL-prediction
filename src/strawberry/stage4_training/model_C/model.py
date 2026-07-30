@@ -19,7 +19,7 @@ from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
 
 # Allow import from src/shared/
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
-from src.shared.cbam import CBAM
+from strawberry.shared.cbam import CBAM
 
 
 class StrawberryRULModelC(nn.Module):
@@ -37,6 +37,9 @@ class StrawberryRULModelC(nn.Module):
         cbam_reduction_ratio: int = 16,
         cbam_kernel_size: int = 7,
         freeze_backbone: bool = False,
+        fusion_mode: str = "early_concat",
+        temporal_pooling: str = "last",
+        env_hidden_size: int = 32,
     ):
         """
         Args:
@@ -46,8 +49,26 @@ class StrawberryRULModelC(nn.Module):
             cbam_reduction_ratio: Channel reduction ratio for CBAM.
             cbam_kernel_size: Spatial kernel size for CBAM.
             freeze_backbone: If True, freeze EfficientNet weights.
+            fusion_mode: "early_concat" keeps the original architecture.
+                "late_env_branch" encodes the image sequence first and fuses a
+                compact environment branch before regression.
+                "gated_env_branch" additionally uses environment context to gate
+                the image temporal representation.
+            temporal_pooling: "last" keeps the original last-timestep readout.
+                "last_mean_max" concatenates last, mean, and max LSTM states.
+            env_hidden_size: Hidden size of the late environment branch.
         """
         super(StrawberryRULModelC, self).__init__()
+
+        valid_fusion_modes = {"early_concat", "late_env_branch", "gated_env_branch"}
+        valid_pooling_modes = {"last", "last_mean_max"}
+        if fusion_mode not in valid_fusion_modes:
+            raise ValueError(f"fusion_mode must be one of {sorted(valid_fusion_modes)}")
+        if temporal_pooling not in valid_pooling_modes:
+            raise ValueError(f"temporal_pooling must be one of {sorted(valid_pooling_modes)}")
+
+        self.fusion_mode = fusion_mode
+        self.temporal_pooling = temporal_pooling
 
         # ---- 1. CNN Backbone: EfficientNet-B0 ----
         weights = EfficientNet_B0_Weights.DEFAULT
@@ -75,7 +96,11 @@ class StrawberryRULModelC(nn.Module):
         self.env_dim = 2  # temperature, humidity
 
         # ---- 4. LSTM Temporal Model ----
-        self.rnn_input_size = self.feature_dim + self.env_dim  # 1280 + 2 = 1282
+        self.rnn_input_size = (
+            self.feature_dim + self.env_dim
+            if self.fusion_mode == "early_concat"
+            else self.feature_dim
+        )
         self.lstm = nn.LSTM(
             input_size=self.rnn_input_size,
             hidden_size=rnn_hidden_size,
@@ -84,9 +109,35 @@ class StrawberryRULModelC(nn.Module):
             dropout=dropout if num_layers > 1 else 0,
         )
 
+        self.temporal_repr_dim = (
+            rnn_hidden_size * 3
+            if self.temporal_pooling == "last_mean_max"
+            else rnn_hidden_size
+        )
+
+        if self.fusion_mode in {"late_env_branch", "gated_env_branch"}:
+            env_summary_dim = self.env_dim * 3  # last, mean, delta
+            self.env_encoder = nn.Sequential(
+                nn.Linear(env_summary_dim, env_hidden_size),
+                nn.ReLU(inplace=True),
+                nn.Dropout(dropout),
+                nn.Linear(env_hidden_size, env_hidden_size),
+                nn.ReLU(inplace=True),
+            )
+
+            if self.fusion_mode == "gated_env_branch":
+                self.env_gate = nn.Sequential(
+                    nn.Linear(env_hidden_size, self.temporal_repr_dim),
+                    nn.Sigmoid(),
+                )
+
+            regressor_input_dim = self.temporal_repr_dim + env_hidden_size
+        else:
+            regressor_input_dim = self.temporal_repr_dim
+
         # ---- 5. Regression Head ----
         self.regressor = nn.Sequential(
-            nn.Linear(rnn_hidden_size, 64),
+            nn.Linear(regressor_input_dim, 64),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout),
             nn.Linear(64, 1),  # Single RUL value in hours
@@ -114,6 +165,21 @@ class StrawberryRULModelC(nn.Module):
 
         return pooled
 
+    def _pool_temporal(self, temporal_out: torch.Tensor) -> torch.Tensor:
+        last_out = temporal_out[:, -1, :]
+        if self.temporal_pooling == "last":
+            return last_out
+
+        mean_out = temporal_out.mean(dim=1)
+        max_out = temporal_out.max(dim=1).values
+        return torch.cat([last_out, mean_out, max_out], dim=1)
+
+    def _summarize_env(self, env_seq: torch.Tensor) -> torch.Tensor:
+        last_env = env_seq[:, -1, :]
+        mean_env = env_seq.mean(dim=1)
+        delta_env = last_env - env_seq[:, 0, :]
+        return torch.cat([last_env, mean_env, delta_env], dim=1)
+
     def forward(
         self, images_seq: torch.Tensor, env_seq: torch.Tensor
     ) -> torch.Tensor:
@@ -135,16 +201,24 @@ class StrawberryRULModelC(nn.Module):
         spatial_features = spatial_features.view(batch_size, seq_len, self.feature_dim)
 
         # ---- Step 2: Fuse with environmental features ----
-        fused_features = torch.cat((spatial_features, env_seq), dim=2)  # (B, S, 1282)
+        if self.fusion_mode == "early_concat":
+            temporal_input = torch.cat((spatial_features, env_seq), dim=2)  # (B, S, 1282)
+        else:
+            temporal_input = spatial_features
 
         # ---- Step 3: Temporal modeling with LSTM ----
-        lstm_out, _ = self.lstm(fused_features)  # (B, S, hidden_size)
+        lstm_out, _ = self.lstm(temporal_input)  # (B, S, hidden_size)
+        temporal_repr = self._pool_temporal(lstm_out)
 
-        # Take the last time step for RUL prediction
-        last_out = lstm_out[:, -1, :]  # (B, hidden_size)
+        if self.fusion_mode in {"late_env_branch", "gated_env_branch"}:
+            env_repr = self.env_encoder(self._summarize_env(env_seq))
+            if self.fusion_mode == "gated_env_branch":
+                gate = self.env_gate(env_repr)
+                temporal_repr = temporal_repr * (0.5 + gate)
+            temporal_repr = torch.cat([temporal_repr, env_repr], dim=1)
 
         # ---- Step 4: Regression ----
-        rul = self.regressor(last_out)  # (B, 1)
+        rul = self.regressor(temporal_repr)  # (B, 1)
 
         return rul
 
@@ -167,4 +241,12 @@ if __name__ == "__main__":
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"  Total params:    {total_params:,}")
     print(f"  Trainable params: {trainable_params:,}")
+
+    tuned = StrawberryRULModelC(
+        fusion_mode="late_env_branch",
+        temporal_pooling="last_mean_max",
+        dropout=0.35,
+    )
+    tuned_output = tuned(dummy_images, dummy_envs)
+    print(f"  Tuned output:    {tuned_output.shape}  (expected: [2, 1])")
     print("Model C test passed!")

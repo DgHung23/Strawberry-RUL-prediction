@@ -1,0 +1,22 @@
+{
+  "model": "Model_A_tuned_EfficientNet-B0_CBAM_GRU",
+  "mae": 27.25617790222168,
+  "rmse": 34.1737060546875,
+  "mape": 62.66026496887207,
+  "r2": 0.8111021637628455,
+  "best_epoch": 4,
+  "best_val_mae": 4.3463029861450195,
+  "train_sequences": 2594,
+  "val_sequences": 593,
+  "test_sequences": 667,
+  "seq_len": 10,
+  "fusion_mode": "late_env_branch",
+  "temporal_pooling": "last_mean_max",
+  "loss": "smooth_l1",
+  "epochs": 10,
+  "completed_epochs": 10,
+  "learning_rate": 0.0003,
+  "dropout": 0.35,
+  "smooth_l1_beta": 8.0,
+  "freeze_backbone": true
+}
