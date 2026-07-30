@@ -36,8 +36,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
 data_root = PROJECT_ROOT / "data"
-raw_root = data_root / "01_raw"
-processed_root = data_root / "02_processed"
+raw_root = data_root / "01_raw" / "strawberry"
+processed_root = data_root / "02_processed" / "strawberry"
 
 
 script_dir = os.path.dirname(os.path.abspath(__file__))

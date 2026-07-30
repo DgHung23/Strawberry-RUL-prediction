@@ -4,6 +4,7 @@ from pathlib import Path
 # Ensure stage3_preprocessing directory is in sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from extracting_frames import main as extracting_frames_main
 from crop_images import main as crop_images_main
 from segmentation import main as segmentation_main
 from frame_differencing import main as frame_differencing_main
@@ -30,6 +31,9 @@ def run_step(name, func):
         raise
 
 def main():
+    # Step 0: Extract frames from videos
+    run_step("Extract Frames", extracting_frames_main)
+    
     # Step 1: Crop images to focus on strawberries
     run_step("Crop Images", crop_images_main)
     
