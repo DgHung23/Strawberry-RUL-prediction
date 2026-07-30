@@ -1,0 +1,20 @@
+Using device: cuda
+Split root: C:\Users\admin\Desktop\Strawberry-RUL-prediction\data\03_split\strawberry
+AMP enabled: True
+Train sequences: 2594
+Val sequences:   593
+Test sequences:  667
+Model A tuned config:
+  fusion_mode=late_env_branch
+  temporal_pooling=last_mean_max
+  seq_len=10
+  loss=smooth_l1
+  freeze_backbone=True
+  total_params=4,781,919
+  trainable_params=774,371
+
+Epoch 1/10
+Train MAE: 37.9077 | Val MAE: 12.7577 | Val RMSE: 22.7356
+  >> Saved best checkpoint, val_mae=12.7577
+
+Epoch 2/10

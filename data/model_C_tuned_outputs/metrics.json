@@ -1,0 +1,21 @@
+{
+  "model": "Model_C_tuned_EfficientNet-B0_CBAM_LSTM",
+  "val_loss": 3.5108946933334058,
+  "val_mae": 5.1969685554504395,
+  "val_rmse": 9.130836486816406,
+  "val_mape": 18.15447235107422,
+  "val_r2": 0.9731055988121022,
+  "mae": 25.731731414794922,
+  "rmse": 32.937599182128906,
+  "mape": 40.399742126464844,
+  "r2": 0.8245203519081497,
+  "best_epoch": 3,
+  "train_sequences": 2594,
+  "val_sequences": 593,
+  "test_sequences": 667,
+  "seq_len": 10,
+  "fusion_mode": "late_env_branch",
+  "temporal_pooling": "last_mean_max",
+  "loss": "smooth_l1",
+  "freeze_backbone": true
+}

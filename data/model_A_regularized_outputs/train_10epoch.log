@@ -1,0 +1,33 @@
+Started: 2026-07-30T09:43:43
+Interpreter: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe
+Command: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe -u C:\Users\admin\Desktop\Strawberry-RUL-prediction\src\strawberry\stage4_training\model_A\train_tuned.py --epochs 10 --patience 3 --seq-len 10 --batch-size 8 --learning-rate 0.0001 --weight-decay 0.0005 --dropout 0.5 --env-hidden-size 32 --fusion-mode late_env_branch --temporal-pooling last_mean_max --loss smooth_l1 --smooth-l1-beta 8.0 --num-workers 2 --prefetch-factor 2 --run-name regularized --seed 42
+
+Using device: cuda
+Split root: C:\Users\admin\Desktop\Strawberry-RUL-prediction\data\03_split\strawberry
+AMP enabled: True
+Train sequences: 2594
+Val sequences:   593
+Test sequences:  667
+Model A tuned config:
+  run_name=regularized
+  fusion_mode=late_env_branch
+  temporal_pooling=last_mean_max
+  seq_len=10
+  batch_size=8
+  loss=smooth_l1
+  learning_rate=0.0001
+  weight_decay=0.0005
+  dropout=0.5
+  num_workers=2
+  freeze_backbone=True
+  total_params=4,781,919
+  trainable_params=774,371
+
+Epoch 1/10
+Training:   0%|          | 0/325 [00:00<?, ?it/s]Training:   0%|          | 0/325 [00:10<?, ?it/s]Training:   2%|2         | 7/325 [00:15<11:24,  2.15s/it]Training:  19%|#9        | 62/325 [00:30<01:52,  2.34it/s]Training:  38%|###7      | 122/325 [00:45<01:06,  3.06it/s]Training:  57%|#####6    | 184/325 [01:00<00:40,  3.45it/s]Training:  76%|#######5  | 246/325 [01:16<00:21,  3.66it/s]Training:  95%|#########4| 308/325 [01:31<00:04,  3.79it/s]Training: 100%|##########| 325/325 [01:38<00:00,  3.29it/s]
+Evaluating:   0%|          | 0/75 [00:00<?, ?it/s]Evaluating:   0%|          | 0/75 [00:11<?, ?it/s]Evaluating: 100%|##########| 75/75 [00:16<00:00,  4.48it/s]Evaluating: 100%|##########| 75/75 [00:16<00:00,  4.48it/s]
+Train MAE: 46.5814 | Val MAE: 30.8637 | Val RMSE: 58.1820
+  >> Saved best checkpoint, val_mae=30.8637
+
+Epoch 2/10
+Training:   0%|          | 0/325 [00:00<?, ?it/s]Training:   0%|          | 0/325 [00:14<?, ?it/s]Training:  18%|#8        | 59/325 [00:15<01:08,  3.89it/s]Training:  37%|###6      | 119/325 [00:30<00:52,  3.95it/s]Training:  55%|#####5    | 180/325 [00:45<00:36,  3.98it/s]Training:  74%|#######3  | 240/325 [01:00<00:21,  3.96it/s]

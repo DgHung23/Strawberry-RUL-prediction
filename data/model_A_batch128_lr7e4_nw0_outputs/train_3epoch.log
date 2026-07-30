@@ -1,0 +1,33 @@
+Started: 2026-07-30T10:07:29
+Interpreter: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe
+Command: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe -u C:\Users\admin\Desktop\Strawberry-RUL-prediction\src\strawberry\stage4_training\model_A\train_tuned.py --epochs 3 --patience 3 --seq-len 10 --batch-size 128 --learning-rate 0.0007 --weight-decay 0.0003 --dropout 0.4 --env-hidden-size 32 --fusion-mode late_env_branch --temporal-pooling last_mean_max --loss smooth_l1 --smooth-l1-beta 8.0 --num-workers 0 --prefetch-factor 2 --run-name batch128_lr7e4_nw0 --seed 42
+
+Using device: cuda
+Split root: C:\Users\admin\Desktop\Strawberry-RUL-prediction\data\03_split\strawberry
+AMP enabled: True
+Train sequences: 2594
+Val sequences:   593
+Test sequences:  667
+Model A tuned config:
+  run_name=batch128_lr7e4_nw0
+  fusion_mode=late_env_branch
+  temporal_pooling=last_mean_max
+  seq_len=10
+  batch_size=128
+  loss=smooth_l1
+  learning_rate=0.0007
+  weight_decay=0.0003
+  dropout=0.4
+  num_workers=0
+  freeze_backbone=True
+  total_params=4,781,919
+  trainable_params=774,371
+
+Epoch 1/3
+Training:   0%|          | 0/21 [00:00<?, ?it/s]Training:   0%|          | 0/21 [00:10<?, ?it/s]Training:   5%|4         | 1/21 [01:18<26:16, 78.84s/it]Training:  14%|#4        | 3/21 [01:38<08:19, 27.73s/it]Training:  24%|##3       | 5/21 [01:57<04:54, 18.41s/it]Training:  33%|###3      | 7/21 [02:16<03:25, 14.68s/it]Training:  43%|####2     | 9/21 [02:36<02:33, 12.76s/it]Training:  52%|#####2    | 11/21 [02:55<01:56, 11.62s/it]Training:  62%|######1   | 13/21 [03:14<01:27, 10.93s/it]Training:  71%|#######1  | 15/21 [03:33<01:02, 10.48s/it]Training:  81%|########  | 17/21 [03:52<00:40, 10.24s/it]Training:  90%|######### | 19/21 [04:11<00:20, 10.03s/it]Training: 100%|##########| 21/21 [04:34<00:00, 10.46s/it]Training: 100%|##########| 21/21 [04:34<00:00, 13.08s/it]
+Evaluating:   0%|          | 0/5 [00:00<?, ?it/s]Evaluating:   0%|          | 0/5 [00:15<?, ?it/s]Evaluating:  60%|######    | 3/5 [00:20<00:13,  6.99s/it]Evaluating: 100%|##########| 5/5 [00:51<00:00, 10.91s/it]Evaluating: 100%|##########| 5/5 [00:51<00:00, 10.21s/it]
+Train MAE: 48.2608 | Val MAE: 36.4416 | Val RMSE: 61.5839
+  >> Saved best checkpoint, val_mae=36.4416
+
+Epoch 2/3
+Training:   0%|          | 0/21 [00:00<?, ?it/s]Training:   0%|          | 0/21 [00:14<?, ?it/s]Training:  10%|9         | 2/21 [00:19<03:02,  9.59s/it]Training:  19%|#9        | 4/21 [00:38<02:42,  9.53s/it]Training:  29%|##8       | 6/21 [00:57<02:23,  9.58s/it]

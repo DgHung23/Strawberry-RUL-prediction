@@ -1,0 +1,42 @@
+{
+  "state": "completed",
+  "pid": 64144,
+  "interpreter": "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\.venv\\Scripts\\python.exe",
+  "models": [
+    "A"
+  ],
+  "completed": [
+    "A"
+  ],
+  "failed": [],
+  "started_at": "2026-07-30T10:14:55",
+  "updated_at": "2026-07-30T10:20:04",
+  "current_model": null,
+  "current_log": "data\\model_A_batch128_lr7e4_nopin_outputs\\train_2epoch.log",
+  "started_model_at": "2026-07-30T10:14:55",
+  "interrupted_model": "A",
+  "interrupted_at": "2026-07-30T09:47:10",
+  "note": "The regularized A experiment underperformed at epoch 1 (val MAE 30.86 versus the earlier tuned best 4.35), so it was stopped. Existing tuned checkpoints remain untouched. New runs now save last_checkpoint.pth so future resume can restore optimizer, scheduler, scaler, and history.",
+  "run_name": "batch128_lr7e4_nopin",
+  "config": {
+    "epochs": 2,
+    "patience": 2,
+    "seq_len": 10,
+    "batch_size": 128,
+    "learning_rate": 0.0007,
+    "weight_decay": 0.0003,
+    "dropout": 0.4,
+    "num_workers": 2,
+    "prefetch_factor": 2,
+    "fusion_mode": "late_env_branch",
+    "temporal_pooling": "last_mean_max",
+    "loss": "smooth_l1",
+    "smooth_l1_beta": 8.0,
+    "unfreeze_backbone": false,
+    "resume": false,
+    "no_pin_memory": true,
+    "amp": true
+  },
+  "return_code": 1,
+  "completed_at": "2026-07-30T10:20:04"
+}

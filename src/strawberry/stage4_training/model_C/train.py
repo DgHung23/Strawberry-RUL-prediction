@@ -22,9 +22,12 @@ from model import StrawberryRULModelC
 def train():
     # ---- 1. Setup paths ----
     project_root = Path(__file__).resolve().parents[4]
-    train_dir = project_root / "data" / "03_split" / "train"
-    val_dir = project_root / "data" / "03_split" / "val"
-    test_dir = project_root / "data" / "03_split" / "test"
+    split_root = project_root / "data" / "03_split" / "strawberry"
+    if not split_root.exists():
+        split_root = project_root / "data" / "03_split"
+    train_dir = split_root / "train"
+    val_dir = split_root / "val"
+    test_dir = split_root / "test"
 
     models_dir = project_root / "models" / "model_C"
     models_dir.mkdir(parents=True, exist_ok=True)
