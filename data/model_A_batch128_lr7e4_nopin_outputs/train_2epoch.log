@@ -1,48 +1,0 @@
-Started: 2026-07-30T10:14:55
-Interpreter: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe
-Command: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe -u C:\Users\admin\Desktop\Strawberry-RUL-prediction\src\strawberry\stage4_training\model_A\train_tuned.py --epochs 2 --patience 2 --seq-len 10 --batch-size 128 --learning-rate 0.0007 --weight-decay 0.0003 --dropout 0.4 --env-hidden-size 32 --fusion-mode late_env_branch --temporal-pooling last_mean_max --loss smooth_l1 --smooth-l1-beta 8.0 --num-workers 2 --prefetch-factor 2 --run-name batch128_lr7e4_nopin --seed 42 --no-pin-memory
-
-Using device: cuda
-Split root: C:\Users\admin\Desktop\Strawberry-RUL-prediction\data\03_split\strawberry
-AMP enabled: True
-Train sequences: 2594
-Val sequences:   593
-Test sequences:  667
-Model A tuned config:
-  run_name=batch128_lr7e4_nopin
-  fusion_mode=late_env_branch
-  temporal_pooling=last_mean_max
-  seq_len=10
-  batch_size=128
-  loss=smooth_l1
-  learning_rate=0.0007
-  weight_decay=0.0003
-  dropout=0.4
-  num_workers=2
-  pin_memory=False
-  freeze_backbone=True
-  total_params=4,781,919
-  trainable_params=774,371
-
-Epoch 1/2
-Training:   0%|          | 0/21 [00:00<?, ?it/s]Training:   0%|          | 0/21 [00:10<?, ?it/s]Training:   5%|4         | 1/21 [00:47<15:49, 47.48s/it]Training:  33%|###3      | 7/21 [01:04<01:44,  7.49s/it]Training:  57%|#####7    | 12/21 [01:20<00:47,  5.25s/it]Training:  81%|########  | 17/21 [01:37<00:18,  4.53s/it]Training: 100%|##########| 21/21 [02:01<00:00,  4.95s/it]Training: 100%|##########| 21/21 [02:01<00:00,  5.77s/it]
-Evaluating:   0%|          | 0/5 [00:00<?, ?it/s]Evaluating:   0%|          | 0/5 [00:18<?, ?it/s]Evaluating:  80%|########  | 4/5 [00:19<00:04,  4.97s/it]Evaluating: 100%|##########| 5/5 [00:41<00:00,  9.28s/it]Evaluating: 100%|##########| 5/5 [00:41<00:00,  8.24s/it]
-Train MAE: 48.2649 | Val MAE: 36.3326 | Val RMSE: 61.6509
-  >> Saved best checkpoint, val_mae=36.3326
-
-Epoch 2/2
-Training:   0%|          | 0/21 [00:00<?, ?it/s]Training:   0%|          | 0/21 [00:17<?, ?it/s]Training:  14%|#4        | 3/21 [00:18<01:50,  6.12s/it]Training:  33%|###3      | 7/21 [00:33<01:04,  4.58s/it]Training:  52%|#####2    | 11/21 [00:48<00:41,  4.18s/it]Training:  71%|#######1  | 15/21 [01:03<00:24,  4.04s/it]Training:  90%|######### | 19/21 [01:18<00:07,  3.94s/it]Training: 100%|##########| 21/21 [01:23<00:00,  4.00s/it]
-Evaluating:   0%|          | 0/5 [00:00<?, ?it/s]Evaluating:   0%|          | 0/5 [00:13<?, ?it/s]Evaluating: 100%|##########| 5/5 [00:17<00:00,  3.46s/it]Evaluating: 100%|##########| 5/5 [00:17<00:00,  3.46s/it]
-Train MAE: 45.3295 | Val MAE: 30.2037 | Val RMSE: 56.7624
-  >> Saved best checkpoint, val_mae=30.2037
-Evaluating:   0%|          | 0/6 [00:00<?, ?it/s]Evaluating:   0%|          | 0/6 [00:15<?, ?it/s]Evaluating:  50%|#####     | 3/6 [00:18<00:18,  6.06s/it]Evaluating: 100%|##########| 6/6 [00:37<00:00,  6.27s/it]Evaluating: 100%|##########| 6/6 [00:37<00:00,  6.24s/it]
-
-Final test metrics:
-  mae: 64.0496
-  rmse: 93.8639
-  mape: 75.7416
-  r2: -0.4251
-Outputs saved to C:\Users\admin\Desktop\Strawberry-RUL-prediction\data\model_A_batch128_lr7e4_nopin_outputs
-
-Finished: 2026-07-30T10:20:04
-Return code: 0

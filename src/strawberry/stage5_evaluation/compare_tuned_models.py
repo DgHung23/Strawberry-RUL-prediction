@@ -510,7 +510,7 @@ def generate_report(models: Dict[str, dict], output_dir: Path, run_name: str) ->
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Compare strawberry tuned/regularized model runs.")
-    parser.add_argument("--run-name", default="regularized")
+    parser.add_argument("--run-name", default="batch128_lr7e4_nopin")
     parser.add_argument("--min-epochs", type=int, default=1)
     return parser.parse_args()
 

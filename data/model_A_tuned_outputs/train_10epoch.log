@@ -1,89 +1,0 @@
-Started: 2026-07-30T06:29:36
-Interpreter: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe
-Command: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe -u C:\Users\admin\Desktop\Strawberry-RUL-prediction\src\strawberry\stage4_training\model_A\train_tuned.py --epochs 10 --patience 10 --seq-len 10 --batch-size 4 --fusion-mode late_env_branch --temporal-pooling last_mean_max --loss smooth_l1
-
-Using device: cuda
-Split root: C:\Users\admin\Desktop\Strawberry-RUL-prediction\data\03_split\strawberry
-AMP enabled: True
-Train sequences: 2594
-Val sequences:   593
-Test sequences:  667
-Model A tuned config:
-  fusion_mode=late_env_branch
-  temporal_pooling=last_mean_max
-  seq_len=10
-  loss=smooth_l1
-  freeze_backbone=True
-  total_params=4,781,919
-  trainable_params=774,371
-
-Epoch 1/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   0%|          | 0/649 [00:10<?, ?it/s]Training:   6%|6         | 41/649 [00:15<03:43,  2.72it/s]Training:  14%|#4        | 94/649 [00:30<02:54,  3.18it/s]Training:  23%|##2       | 148/649 [00:45<02:28,  3.37it/s]Training:  31%|###1      | 202/649 [01:00<02:09,  3.46it/s]Training:  39%|###8      | 253/649 [01:15<01:55,  3.43it/s]Training:  47%|####6     | 303/649 [01:30<01:42,  3.39it/s]Training:  55%|#####4    | 355/649 [01:45<01:26,  3.41it/s]Training:  62%|######2   | 405/649 [02:00<01:12,  3.38it/s]Training:  71%|#######   | 460/649 [02:15<00:54,  3.45it/s]Training:  79%|#######8  | 512/649 [02:31<00:39,  3.44it/s]Training:  87%|########6 | 564/649 [02:46<00:24,  3.43it/s]Training:  95%|#########5| 618/649 [03:01<00:08,  3.48it/s]Training: 100%|##########| 649/649 [03:11<00:00,  3.38it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:  91%|#########1| 136/149 [00:15<00:01,  9.01it/s]Evaluating: 100%|##########| 149/149 [00:18<00:00,  8.18it/s]
-Train MAE: 37.6744 | Val MAE: 15.2044 | Val RMSE: 27.1385
-  >> Saved best checkpoint, val_mae=15.2044
-
-Epoch 2/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   8%|8         | 54/649 [00:15<02:45,  3.59it/s]Training:   8%|8         | 54/649 [00:29<02:45,  3.59it/s]Training:  17%|#6        | 108/649 [00:30<02:31,  3.57it/s]Training:  25%|##5       | 163/649 [00:45<02:15,  3.60it/s]Training:  34%|###3      | 218/649 [01:00<01:59,  3.60it/s]Training:  41%|####1     | 268/649 [01:15<01:49,  3.49it/s]Training:  50%|####9     | 323/649 [01:31<01:32,  3.53it/s]Training:  57%|#####7    | 373/649 [01:46<01:19,  3.46it/s]Training:  65%|######5   | 425/649 [02:01<01:04,  3.46it/s]Training:  74%|#######3  | 480/649 [02:16<00:48,  3.50it/s]Training:  82%|########1 | 532/649 [02:31<00:33,  3.48it/s]Training:  90%|######### | 586/649 [02:46<00:17,  3.51it/s]Training:  99%|#########8| 640/649 [03:01<00:02,  3.54it/s]Training: 100%|##########| 649/649 [03:04<00:00,  3.53it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:  93%|#########3| 139/149 [00:15<00:01,  9.26it/s]Evaluating: 100%|##########| 149/149 [00:16<00:00,  9.30it/s]
-Train MAE: 22.7729 | Val MAE: 7.5970 | Val RMSE: 14.0128
-  >> Saved best checkpoint, val_mae=7.5970
-
-Epoch 3/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   8%|8         | 52/649 [00:15<02:54,  3.42it/s]Training:   8%|8         | 52/649 [00:29<02:54,  3.42it/s]Training:  16%|#6        | 107/649 [00:30<02:32,  3.55it/s]Training:  24%|##4       | 157/649 [00:45<02:23,  3.44it/s]Training:  33%|###2      | 211/649 [01:00<02:05,  3.49it/s]Training:  41%|####      | 265/649 [01:15<01:49,  3.52it/s]Training:  49%|####8     | 318/649 [01:30<01:34,  3.50it/s]Training:  57%|#####7    | 373/649 [01:46<01:17,  3.55it/s]Training:  66%|######5   | 428/649 [02:01<01:01,  3.57it/s]Training:  74%|#######3  | 480/649 [02:16<00:47,  3.52it/s]Training:  82%|########2 | 535/649 [02:31<00:32,  3.56it/s]Training:  91%|######### | 589/649 [02:46<00:16,  3.57it/s]Training:  99%|#########9| 644/649 [03:01<00:01,  3.58it/s]Training: 100%|##########| 649/649 [03:03<00:00,  3.54it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:  93%|#########3| 139/149 [00:15<00:01,  9.26it/s]Evaluating: 100%|##########| 149/149 [00:15<00:00,  9.34it/s]
-Train MAE: 16.8529 | Val MAE: 9.8342 | Val RMSE: 16.1143
-  No improvement for 1/10 epoch(s)
-
-Epoch 4/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   0%|          | 0/649 [00:10<?, ?it/s]Training:   8%|7         | 50/649 [00:15<02:59,  3.33it/s]Training:  16%|#6        | 105/649 [00:30<02:35,  3.51it/s]Training:  25%|##4       | 160/649 [00:45<02:17,  3.56it/s]Training:  33%|###2      | 213/649 [01:00<02:03,  3.53it/s]Training:  41%|####1     | 268/649 [01:15<01:47,  3.56it/s]Training:  49%|####9     | 321/649 [01:31<01:32,  3.53it/s]Training:  58%|#####7    | 376/649 [01:46<01:16,  3.57it/s]Training:  66%|######6   | 429/649 [02:01<01:01,  3.56it/s]Training:  74%|#######4  | 481/649 [02:16<00:47,  3.52it/s]Training:  82%|########1 | 532/649 [02:31<00:33,  3.48it/s]Training:  90%|######### | 587/649 [02:46<00:17,  3.52it/s]Training:  99%|#########8| 642/649 [03:01<00:01,  3.56it/s]Training: 100%|##########| 649/649 [03:03<00:00,  3.54it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:  93%|#########3| 139/149 [00:15<00:01,  9.25it/s]Evaluating: 100%|##########| 149/149 [00:15<00:00,  9.35it/s]
-Train MAE: 15.2208 | Val MAE: 4.3463 | Val RMSE: 8.2446
-  >> Saved best checkpoint, val_mae=4.3463
-
-Epoch 5/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   0%|          | 0/649 [00:11<?, ?it/s]Training:   8%|8         | 53/649 [00:15<02:51,  3.48it/s]Training:  17%|#6        | 108/649 [00:30<02:31,  3.57it/s]Training:  25%|##4       | 160/649 [00:45<02:19,  3.51it/s]Training:  33%|###2      | 213/649 [01:00<02:04,  3.50it/s]Training:  41%|####1     | 268/649 [01:15<01:47,  3.55it/s]Training:  50%|####9     | 322/649 [01:31<01:32,  3.55it/s]Training:  58%|#####8    | 377/649 [01:46<01:16,  3.57it/s]Training:  66%|######6   | 431/649 [02:01<01:01,  3.56it/s]Training:  74%|#######4  | 483/649 [02:16<00:47,  3.52it/s]Training:  83%|########2 | 537/649 [02:31<00:31,  3.53it/s]Training:  91%|#########1| 591/649 [02:47<00:16,  3.54it/s]Training: 100%|#########9| 646/649 [03:02<00:00,  3.56it/s]Training: 100%|##########| 649/649 [03:02<00:00,  3.55it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:  94%|#########3| 140/149 [00:15<00:00,  9.33it/s]Evaluating: 100%|##########| 149/149 [00:15<00:00,  9.38it/s]
-Train MAE: 13.1871 | Val MAE: 9.9435 | Val RMSE: 16.5316
-  No improvement for 1/10 epoch(s)
-
-Epoch 6/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   0%|          | 0/649 [00:12<?, ?it/s]Training:   8%|8         | 55/649 [00:15<02:43,  3.64it/s]Training:  17%|#6        | 108/649 [00:30<02:31,  3.57it/s]Training:  25%|##5       | 163/649 [00:45<02:15,  3.60it/s]Training:  34%|###3      | 218/649 [01:00<01:59,  3.62it/s]Training:  41%|####1     | 267/649 [01:15<01:49,  3.49it/s]Training:  49%|####8     | 317/649 [01:30<01:37,  3.42it/s]Training:  57%|#####6    | 369/649 [01:45<01:21,  3.43it/s]Training:  65%|######5   | 422/649 [02:00<01:05,  3.45it/s]Training:  73%|#######2  | 472/649 [02:16<00:52,  3.39it/s]Training:  80%|########  | 521/649 [02:31<00:38,  3.35it/s]Training:  88%|########8 | 572/649 [02:46<00:22,  3.36it/s]Training:  96%|#########5| 621/649 [03:01<00:08,  3.33it/s]Training: 100%|##########| 649/649 [03:09<00:00,  3.42it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:   0%|          | 0/149 [00:13<?, ?it/s]Evaluating:  87%|########7 | 130/149 [00:15<00:02,  8.63it/s]Evaluating: 100%|##########| 149/149 [00:17<00:00,  8.67it/s]
-Train MAE: 11.9876 | Val MAE: 5.6979 | Val RMSE: 10.8317
-  No improvement for 2/10 epoch(s)
-
-Epoch 7/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   8%|7         | 51/649 [00:15<02:58,  3.36it/s]Training:   8%|7         | 51/649 [00:26<02:58,  3.36it/s]Training:  15%|#5        | 100/649 [00:30<02:47,  3.27it/s]Training:  23%|##2       | 149/649 [00:45<02:34,  3.24it/s]Training:  30%|###       | 196/649 [01:00<02:22,  3.19it/s]Training:  38%|###7      | 246/649 [01:15<02:04,  3.24it/s]Training:  46%|####5     | 297/649 [01:30<01:46,  3.29it/s]Training:  54%|#####3    | 350/649 [01:46<01:29,  3.36it/s]Training:  62%|######2   | 405/649 [02:01<01:10,  3.45it/s]Training:  71%|#######   | 458/649 [02:16<00:55,  3.47it/s]Training:  79%|#######8  | 512/649 [02:31<00:39,  3.50it/s]Training:  87%|########7 | 565/649 [02:46<00:24,  3.50it/s]Training:  94%|#########4| 612/649 [03:01<00:10,  3.38it/s]Training: 100%|##########| 649/649 [03:14<00:00,  3.34it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:   0%|          | 0/149 [00:12<?, ?it/s]Evaluating:  83%|########2 | 123/149 [00:15<00:03,  8.19it/s]Evaluating: 100%|##########| 149/149 [00:17<00:00,  8.34it/s]
-Train MAE: 12.0330 | Val MAE: 7.6590 | Val RMSE: 13.7430
-  No improvement for 3/10 epoch(s)
-
-Epoch 8/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   0%|          | 0/649 [00:14<?, ?it/s]Training:   7%|7         | 48/649 [00:15<03:08,  3.19it/s]Training:  15%|#4        | 96/649 [00:30<02:54,  3.18it/s]Training:  22%|##2       | 143/649 [00:45<02:40,  3.15it/s]Training:  29%|##8       | 186/649 [01:00<02:33,  3.02it/s]Training:  35%|###5      | 230/649 [01:15<02:21,  2.96it/s]Training:  42%|####2     | 275/649 [01:31<02:06,  2.96it/s]Training:  48%|####8     | 314/649 [01:46<01:58,  2.83it/s]Training:  55%|#####5    | 359/649 [02:01<01:40,  2.88it/s]Training:  63%|######2   | 406/649 [02:16<01:22,  2.94it/s]Training:  70%|######9   | 453/649 [02:31<01:05,  2.99it/s]Training:  77%|#######7  | 500/649 [02:47<00:49,  3.02it/s]Training:  84%|########3 | 544/649 [03:02<00:35,  2.98it/s]Training:  91%|#########1| 593/649 [03:17<00:18,  3.06it/s]Training:  98%|#########8| 639/649 [03:32<00:03,  3.06it/s]Training: 100%|##########| 649/649 [03:35<00:00,  3.01it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:  77%|#######6  | 114/149 [00:15<00:04,  7.55it/s]Evaluating: 100%|##########| 149/149 [00:19<00:00,  7.72it/s]
-Train MAE: 10.3604 | Val MAE: 11.1914 | Val RMSE: 18.7168
-  No improvement for 4/10 epoch(s)
-
-Epoch 9/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   7%|7         | 48/649 [00:15<03:09,  3.18it/s]Training:   7%|7         | 48/649 [00:29<03:09,  3.18it/s]Training:  15%|#4        | 96/649 [00:30<02:54,  3.17it/s]Training:  22%|##2       | 144/649 [00:45<02:38,  3.18it/s]Training:  30%|##9       | 193/649 [01:00<02:22,  3.21it/s]Training:  38%|###7      | 245/649 [01:15<02:03,  3.28it/s]Training:  46%|####5     | 296/649 [01:30<01:46,  3.31it/s]Training:  53%|#####3    | 346/649 [01:45<01:31,  3.30it/s]Training:  61%|######    | 393/649 [02:01<01:19,  3.23it/s]Training:  68%|######8   | 444/649 [02:16<01:02,  3.28it/s]Training:  77%|#######6  | 497/649 [02:31<00:45,  3.35it/s]Training:  84%|########3 | 545/649 [02:46<00:31,  3.30it/s]Training:  92%|#########1| 595/649 [03:01<00:16,  3.31it/s]Training:  99%|#########8| 640/649 [03:16<00:02,  3.20it/s]Training: 100%|##########| 649/649 [03:19<00:00,  3.25it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:   0%|          | 0/149 [00:10<?, ?it/s]Evaluating:  76%|#######5  | 113/149 [00:15<00:04,  7.52it/s]Evaluating: 100%|##########| 149/149 [00:18<00:00,  7.85it/s]
-Train MAE: 9.7613 | Val MAE: 13.9971 | Val RMSE: 21.9466
-  No improvement for 5/10 epoch(s)
-
-Epoch 10/10
-Training:   0%|          | 0/649 [00:00<?, ?it/s]Training:   0%|          | 0/649 [00:11<?, ?it/s]Training:   8%|7         | 50/649 [00:15<03:01,  3.29it/s]Training:  15%|#5        | 99/649 [00:30<02:48,  3.26it/s]Training:  22%|##2       | 146/649 [00:45<02:38,  3.18it/s]Training:  30%|##9       | 192/649 [01:00<02:26,  3.13it/s]Training:  37%|###7      | 241/649 [01:15<02:08,  3.16it/s]Training:  44%|####3     | 285/649 [01:30<01:58,  3.08it/s]Training:  51%|#####1    | 334/649 [01:45<01:40,  3.14it/s]Training:  59%|#####9    | 385/649 [02:01<01:22,  3.21it/s]Training:  67%|######7   | 438/649 [02:16<01:03,  3.31it/s]Training:  75%|#######5  | 489/649 [02:31<00:48,  3.32it/s]Training:  83%|########3 | 540/649 [02:46<00:32,  3.34it/s]Training:  91%|#########1| 592/649 [03:01<00:16,  3.36it/s]Training:  99%|#########8| 642/649 [03:16<00:02,  3.35it/s]Training: 100%|##########| 649/649 [03:18<00:00,  3.27it/s]
-Evaluating:   0%|          | 0/149 [00:00<?, ?it/s]Evaluating:   0%|          | 0/149 [00:12<?, ?it/s]Evaluating:  89%|########8 | 132/149 [00:15<00:01,  8.74it/s]Evaluating: 100%|##########| 149/149 [00:17<00:00,  8.49it/s]
-Train MAE: 9.8172 | Val MAE: 8.5574 | Val RMSE: 15.0553
-  No improvement for 6/10 epoch(s)
-Evaluating:   0%|          | 0/167 [00:00<?, ?it/s]Evaluating:  64%|######4   | 107/167 [00:15<00:08,  7.09it/s]Evaluating: 100%|##########| 167/167 [00:24<00:00,  6.73it/s]
-
-Final test metrics:
-  mae: 27.2562
-  rmse: 34.1737
-  mape: 62.6603
-  r2: 0.8111
-Outputs saved to C:\Users\admin\Desktop\Strawberry-RUL-prediction\data\model_A_tuned_outputs
-
-Finished: 2026-07-30T07:05:03
-Return code: 0
