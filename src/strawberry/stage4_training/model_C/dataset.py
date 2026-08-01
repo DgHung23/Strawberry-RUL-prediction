@@ -31,34 +31,22 @@ class StrawberrySequenceDataset(Dataset):
         self._prepare_sequences()
 
     def _prepare_sequences(self):
-        fruit_dirs = [d for d in self.split_dir.iterdir() if d.is_dir() and d.name.startswith("F")]
-
-        for fruit_dir in fruit_dirs:
-            labels_path = fruit_dir / "labels.csv"
-            if not labels_path.exists():
-                continue
-
-            df = pd.read_csv(labels_path)
-            # Ensure it's sorted by timestamp
-            df["timestamp"] = pd.to_datetime(df["timestamp"])
-            df = df.sort_values(by="timestamp").reset_index(drop=True)
-
-            # Create sequences of length seq_len
-            for i in range(len(df) - self.seq_len + 1):
-                window = df.iloc[i : i + self.seq_len]
-
-                # Image paths (fix paths to point to local images/ folder)
-                image_paths = [
-                    fruit_dir / "images" / Path(p).name for p in window["image_path"].tolist()
-                ]
-
-                # Env features
+        labels_path = self.split_dir / "labels.csv"
+        if not labels_path.exists():
+            return
+            
+        df = pd.read_csv(labels_path)
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        
+        for fruit_id, fruit_df in df.groupby("fruit_id"):
+            fruit_df = fruit_df.sort_values(by="timestamp").reset_index(drop=True)
+            for i in range(len(fruit_df) - self.seq_len + 1):
+                window = fruit_df.iloc[i : i + self.seq_len]
+                image_paths = [self.split_dir / p for p in window["image_path"].tolist()]
                 temps = window["temperature_c"].values
                 humidities = window["humidity_pct"].values
-
-                # Target: RUL of the last frame in the sequence
                 rul = window.iloc[-1]["rul_hours"]
-
+                
                 self.samples.append({
                     "image_paths": image_paths,
                     "temps": temps,

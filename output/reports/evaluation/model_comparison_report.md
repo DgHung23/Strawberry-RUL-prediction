@@ -17,28 +17,41 @@
 
 | Model | MAE (h) | RMSE (h) | MAPE (%) | R² | Train Seq | Val Seq | Test Seq |
 |-------|---------|----------|----------|-----|-----------|---------|----------|
-| **A** | 43.14 | 49.87 | 99.6 | 0.6075 | 2614 | 598 | 672 |
-| **B** | 53.77 | 61.54 | 108.7 | 0.4026 | 2614 | 598 | 672 |
-| **C** | 32.02 | 39.39 | 64.7 | 0.7552 | 2614 | 598 | 672 |
-| **D** | 54.44 | 65.64 | 125.3 | 0.3203 | 2614 | 598 | 672 |
+| **A** | 38.11 | 46.60 | 119.1 | 0.2994 | 2668 | 593 | 593 |
+| **B** | 31.73 | 38.94 | 94.3 | 0.5109 | 2668 | 593 | 593 |
+| **C** | 45.85 | 56.58 | 148.4 | -0.0328 | 2668 | 593 | 593 |
+| **D** | 31.96 | 39.18 | 97.2 | 0.5047 | 2668 | 593 | 593 |
 
 ### Best Per Metric
 
-- **MAE (hours):** Model C (32.025)
-- **RMSE (hours):** Model C (39.390)
-- **MAPE (%):** Model C (64.733)
-- **R²:** Model C (0.755)
+- **MAE (hours):** Model B (31.730)
+- **RMSE (hours):** Model B (38.938)
+- **MAPE (%):** Model B (94.345)
+- **R²:** Model B (0.511)
+- **Inference Time (ms):** Model D (2.400)
+- **Epoch Time (s):** Model D (85.000)
+- **Model Size (MB):** Model D (11.800)
+- **Total Parameters:** Model D (2998243.000)
 
-## 3. Training Dynamics
+## 3. Performance & Resource Requirements
+
+| Model | Params | Size (MB) | Inference (ms/sample) | Train Epoch (s) |
+|-------|--------|-----------|-----------------------|-----------------|
+| **A** | 4,781,919 | 18.50 | 4.20 | 110.00 |
+| **B** | 3,178,723 | 12.10 | 2.50 | 90.00 |
+| **C** | 4,962,399 | 19.10 | 4.30 | 115.00 |
+| **D** | 2,998,243 | 11.80 | 2.40 | 85.00 |
+
+## 4. Training Dynamics
 
 | Model | Best Epoch | Best Val Loss | Final Train Loss | Overfit? |
 |-------|-----------|---------------|------------------|----------|
-| **A** | 7 | 8.99 | 5.39 | ⚠️ Yes |
-| **B** | 8 | 11.13 | 5.11 | ⚠️ Yes |
-| **C** | 4 | 5.47 | 5.24 | ⚠️ Yes |
-| **D** | 4 | 8.74 | 4.84 | ⚠️ Yes |
+| **A** | 8 | 16.14 | 8.53 | ⚠️ Yes |
+| **B** | 10 | 16.17 | 8.97 | No |
+| **C** | 7 | 16.70 | 7.65 | No |
+| **D** | 9 | 16.76 | 10.99 | No |
 
-## 4. Architecture Insights
+## 5. Architecture Insights
 
 ### CNN Backbone Effect
 
@@ -58,11 +71,11 @@ Comparing models with the **same CNN backbone** isolates the RNN effect:
 
 All four models integrate CBAM (Channel + Spatial Attention) between the CNN feature extractor and global pooling. This helps the network focus on salient degradation markers (mold spots, color shifts, texture changes) rather than background noise. ~205K parameters added.
 
-## 5. Output Files
+## 6. Output Files
 
 | Model | Checkpoint | History | Predictions | Metrics |
 |-------|-----------|---------|-------------|---------|
-| **A** | `models/model_A/best_model.pth` ✅ | `data\model_A_outputs/training_history.csv` | `data\model_A_outputs/test_predictions.csv` | `data\model_A_outputs/metrics.json` |
-| **B** | `models/model_B/best_model.pth` ✅ | `data\model_B_outputs/training_history.csv` | `data\model_B_outputs/test_predictions.csv` | `data\model_B_outputs/metrics.json` |
-| **C** | `models/model_C/best_model.pth` ✅ | `data\model_C_outputs/training_history.csv` | `data\model_C_outputs/test_predictions.csv` | `data\model_C_outputs/metrics.json` |
-| **D** | `models/model_D/best_model.pth` ✅ | `data\model_D_outputs/training_history.csv` | `data\model_D_outputs/test_predictions.csv` | `data\model_D_outputs/metrics.json` |
+| **A** | `models/model_A/best_model.pth` ✅ | `data\model_A_batch128_lr7e4_nopin_outputs/training_history.csv` | `data\model_A_batch128_lr7e4_nopin_outputs/test_predictions.csv` | `data\model_A_batch128_lr7e4_nopin_outputs/metrics.json` |
+| **B** | `models/model_B/best_model.pth` ❌ | `data\model_B_batch128_lr7e4_nopin_outputs/training_history.csv` | `data\model_B_batch128_lr7e4_nopin_outputs/test_predictions.csv` | `data\model_B_batch128_lr7e4_nopin_outputs/metrics.json` |
+| **C** | `models/model_C/best_model.pth` ❌ | `data\model_C_batch128_lr7e4_nopin_outputs/training_history.csv` | `data\model_C_batch128_lr7e4_nopin_outputs/test_predictions.csv` | `data\model_C_batch128_lr7e4_nopin_outputs/metrics.json` |
+| **D** | `models/model_D/best_model.pth` ❌ | `data\model_D_batch128_lr7e4_nopin_outputs/training_history.csv` | `data\model_D_batch128_lr7e4_nopin_outputs/test_predictions.csv` | `data\model_D_batch128_lr7e4_nopin_outputs/metrics.json` |

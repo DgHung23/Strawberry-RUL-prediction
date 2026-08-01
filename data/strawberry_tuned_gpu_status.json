@@ -1,0 +1,38 @@
+{
+  "state": "failed",
+  "pid": 85248,
+  "interpreter": "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\.venv\\Scripts\\python.exe",
+  "models": [
+    "C"
+  ],
+  "run_name": "batch128_lr7e4_nopin",
+  "config": {
+    "epochs": 10,
+    "patience": 4,
+    "seq_len": 10,
+    "batch_size": 128,
+    "learning_rate": 0.0007,
+    "weight_decay": 0.0003,
+    "dropout": 0.4,
+    "num_workers": 2,
+    "prefetch_factor": 2,
+    "fusion_mode": "late_env_branch",
+    "temporal_pooling": "last_mean_max",
+    "loss": "smooth_l1",
+    "smooth_l1_beta": 8.0,
+    "unfreeze_backbone": false,
+    "resume": false,
+    "no_pin_memory": true,
+    "amp": true
+  },
+  "completed": [],
+  "failed": [
+    "C"
+  ],
+  "started_at": "2026-07-31T02:51:06",
+  "updated_at": "2026-07-31T02:51:10",
+  "current_model": "C",
+  "current_log": "data\\model_C_batch128_lr7e4_nopin_outputs\\train_10epoch.log",
+  "started_model_at": "2026-07-31T02:51:06",
+  "return_code": 1
+}

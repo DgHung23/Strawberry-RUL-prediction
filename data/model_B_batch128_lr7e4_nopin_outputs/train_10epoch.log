@@ -1,0 +1,20 @@
+Started: 2026-07-31T02:50:34
+Interpreter: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe
+Command: C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\Scripts\python.exe -u C:\Users\admin\Desktop\Strawberry-RUL-prediction\src\strawberry\stage4_training\model_B\train_tuned.py --epochs 10 --patience 4 --seq-len 10 --batch-size 128 --learning-rate 0.0007 --weight-decay 0.0003 --dropout 0.4 --env-hidden-size 32 --fusion-mode late_env_branch --temporal-pooling last_mean_max --loss smooth_l1 --smooth-l1-beta 8.0 --num-workers 2 --prefetch-factor 2 --run-name batch128_lr7e4_nopin --seed 42 --no-pin-memory --resume
+
+Using device: cuda
+Split root: C:\Users\admin\Desktop\Strawberry-RUL-prediction\data\03_split\strawberry
+AMP enabled: True
+Traceback (most recent call last):
+  File "C:\Users\admin\Desktop\Strawberry-RUL-prediction\src\strawberry\stage4_training\model_B\train_tuned.py", line 518, in <module>
+    train(parse_args())
+  File "C:\Users\admin\Desktop\Strawberry-RUL-prediction\src\strawberry\stage4_training\model_B\train_tuned.py", line 245, in train
+    train_loader = DataLoader(
+  File "C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\lib\site-packages\torch\utils\data\dataloader.py", line 385, in __init__
+    sampler = RandomSampler(dataset, generator=generator)  # type: ignore[arg-type]
+  File "C:\Users\admin\Desktop\Strawberry-RUL-prediction\.venv\lib\site-packages\torch\utils\data\sampler.py", line 156, in __init__
+    raise ValueError(
+ValueError: num_samples should be a positive integer value, but got num_samples=0
+
+Finished: 2026-07-31T02:50:37
+Return code: 1

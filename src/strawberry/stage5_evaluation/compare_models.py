@@ -38,25 +38,25 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 MODEL_DIRS = {
     "A": {
         "label": "EfficientNet-B0 + CBAM + GRU",
-        "output_dir": PROJECT_ROOT / "data" / "model_A_outputs",
+        "output_dir": PROJECT_ROOT / "data" / "model_A_batch128_lr7e4_nopin_outputs",
         "color": "#2196F3",  # blue
         "marker": "o",
     },
     "B": {
         "label": "MobileNetV2 + CBAM + LSTM",
-        "output_dir": PROJECT_ROOT / "data" / "model_B_outputs",
+        "output_dir": PROJECT_ROOT / "data" / "model_B_batch128_lr7e4_nopin_outputs",
         "color": "#FF9800",  # orange
         "marker": "s",
     },
     "C": {
         "label": "EfficientNet-B0 + CBAM + LSTM",
-        "output_dir": PROJECT_ROOT / "data" / "model_C_outputs",
+        "output_dir": PROJECT_ROOT / "data" / "model_C_batch128_lr7e4_nopin_outputs",
         "color": "#4CAF50",  # green
         "marker": "D",
     },
     "D": {
         "label": "MobileNetV2 + CBAM + GRU",
-        "output_dir": PROJECT_ROOT / "data" / "model_D_outputs",
+        "output_dir": PROJECT_ROOT / "data" / "model_D_batch128_lr7e4_nopin_outputs",
         "color": "#E91E63",  # pink
         "marker": "^",
     },
@@ -293,6 +293,49 @@ def plot_predicted_vs_actual(models: Dict[str, dict], output_dir: Path):
     plt.close(fig)
     print(f"  [OK] Saved: {out_path}")
 
+def plot_combined_predicted_vs_actual(models: Dict[str, dict], output_dir: Path):
+    """Scatter plot of predicted vs actual RUL for all models combined in a single graph."""
+    fig, ax = plt.subplots(figsize=(7, 6))
+    
+    all_actual = []
+    all_predicted = []
+
+    for key, cfg in sorted(models.items()):
+        df = load_test_predictions(cfg["output_dir"])
+        if df is None:
+            continue
+            
+        actual = df["actual_rul"].values
+        predicted = df["predicted_rul"].values
+        
+        all_actual.extend(actual)
+        all_predicted.extend(predicted)
+
+        ax.scatter(actual, predicted, alpha=0.6, s=20, color=cfg["color"], edgecolors="none", label=f"Model {key}")
+
+    if not all_actual:
+        print("  [skip] No data for combined predicted vs actual.")
+        return
+
+    # Identity line
+    all_vals = np.concatenate([all_actual, all_predicted])
+    min_val, max_val = all_vals.min(), all_vals.max()
+    margin = (max_val - min_val) * 0.05
+    ax.plot([min_val - margin, max_val + margin], [min_val - margin, max_val + margin],
+            "k--", linewidth=1.2, alpha=0.6, label="Perfect prediction")
+
+    ax.set_xlabel("Actual RUL (hours)")
+    ax.set_ylabel("Predicted RUL (hours)")
+    ax.set_title("Combined Predicted vs Actual RUL", fontweight="bold")
+    ax.legend(fontsize=9, loc="lower right")
+    ax.grid(True, alpha=0.3)
+
+    fig.tight_layout()
+    out_path = output_dir / "combined_predicted_vs_actual.png"
+    fig.savefig(out_path)
+    plt.close(fig)
+    print(f"  [OK] Saved: {out_path}")
+
 
 # ---------------------------------------------------------------------------
 # Chart 4: Residual Distribution
@@ -348,36 +391,108 @@ def plot_residual_distribution(models: Dict[str, dict], output_dir: Path):
 
 
 # ---------------------------------------------------------------------------
-# Chart 5: Model Parameter Count
+# Chart 5: Model Size and Parameter Count
 # ---------------------------------------------------------------------------
 
-def plot_model_params(output_dir: Path):
+def plot_model_size(models: Dict[str, dict], output_dir: Path):
+    """Bar chart showing model file size in MB."""
+    model_keys = sorted(models.keys())
+    sizes = []
+    labels = []
+    colors = []
+    
+    for key in model_keys:
+        m = load_metrics(models[key]["output_dir"])
+        if m and "model_size_mb" in m:
+            sizes.append(m["model_size_mb"])
+            labels.append(f"Model {key}")
+            colors.append(models[key]["color"])
+            
+    if not sizes:
+        print("  [skip] No model size data found.")
+        return
+        
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    bars = ax.bar(labels, sizes, color=colors, alpha=0.85, edgecolor="black", linewidth=0.6)
+    ax.set_ylabel("Model Size (MB)")
+    ax.set_title("Model Size Comparison (MB)", fontweight="bold")
+    ax.grid(True, alpha=0.3, axis="y")
+    
+    for bar, val in zip(bars, sizes):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.1,
+                f"{val:.2f} MB", ha="center", fontsize=10, fontweight="bold")
+                
+    fig.tight_layout()
+    out_path = output_dir / "model_size_comparison.png"
+    fig.savefig(out_path)
+    plt.close(fig)
+    print(f"  [OK] Saved: {out_path}")
+
+def plot_model_params(models: Dict[str, dict], output_dir: Path):
     """Bar chart showing parameter counts for all four model architectures."""
-    # These are the known counts from model.py shape tests
-    param_data = {
-        "A\n(EfficientNet+GRU)": {"total": 4762975, "color": "#2196F3"},
-        "B\n(MobileNetV2+LSTM)": {"total": 3160035, "color": "#FF9800"},
-        "C\n(EfficientNet+LSTM)": {"total": 4943711, "color": "#4CAF50"},
-        "D\n(MobileNetV2+GRU)": {"total": 2979299, "color": "#E91E63"},
-    }
+    model_keys = sorted(models.keys())
+    params = []
+    labels = []
+    colors = []
+    
+    for key in model_keys:
+        m = load_metrics(models[key]["output_dir"])
+        if m and "total_params" in m:
+            params.append(m["total_params"])
+            labels.append(f"Model {key}")
+            colors.append(models[key]["color"])
+            
+    if not params:
+        print("  [skip] No parameter data found.")
+        return
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    labels = list(param_data.keys())
-    values = [param_data[k]["total"] for k in labels]
-    colors = [param_data[k]["color"] for k in labels]
-
-    bars = ax.bar(labels, values, color=colors, alpha=0.85, edgecolor="black", linewidth=0.6)
+    bars = ax.bar(labels, params, color=colors, alpha=0.85, edgecolor="black", linewidth=0.6)
     ax.set_ylabel("Total Parameters")
-    ax.set_title("Model Size Comparison", fontweight="bold")
+    ax.set_title("Parameter Count Comparison", fontweight="bold")
     ax.grid(True, alpha=0.3, axis="y")
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f"{x/1e6:.2f}M"))
 
-    for bar, val in zip(bars, values):
+    for bar, val in zip(bars, params):
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 40000,
                 f"{val/1e6:.2f}M", ha="center", fontsize=10, fontweight="bold")
 
     fig.tight_layout()
     out_path = output_dir / "model_params_comparison.png"
+    fig.savefig(out_path)
+    plt.close(fig)
+    print(f"  [OK] Saved: {out_path}")
+
+def plot_inference_speed(models: Dict[str, dict], output_dir: Path):
+    """Bar chart showing inference time per sample in milliseconds."""
+    model_keys = sorted(models.keys())
+    times = []
+    labels = []
+    colors = []
+    
+    for key in model_keys:
+        m = load_metrics(models[key]["output_dir"])
+        if m and "inference_time_ms" in m:
+            times.append(m["inference_time_ms"])
+            labels.append(f"Model {key}")
+            colors.append(models[key]["color"])
+            
+    if not times:
+        print("  [skip] No inference speed data found.")
+        return
+        
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    bars = ax.bar(labels, times, color=colors, alpha=0.85, edgecolor="black", linewidth=0.6)
+    ax.set_ylabel("Inference Time (ms / sample)")
+    ax.set_title("Inference Speed Comparison (lower = better)", fontweight="bold")
+    ax.grid(True, alpha=0.3, axis="y")
+    
+    for bar, val in zip(bars, times):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05,
+                f"{val:.2f} ms", ha="center", fontsize=10, fontweight="bold")
+                
+    fig.tight_layout()
+    out_path = output_dir / "inference_speed_comparison.png"
     fig.savefig(out_path)
     plt.close(fig)
     print(f"  [OK] Saved: {out_path}")
@@ -452,6 +567,10 @@ def generate_report(models: Dict[str, dict], output_dir: Path):
         ("rmse", "RMSE (hours)", True),
         ("mape", "MAPE (%)", True),
         ("r2", "R²", False),
+        ("inference_time_ms", "Inference Time (ms)", True),
+        ("epoch_time_s", "Epoch Time (s)", True),
+        ("model_size_mb", "Model Size (MB)", True),
+        ("total_params", "Total Parameters", True),
     ]:
         candidates = []
         for key in model_keys:
@@ -467,8 +586,35 @@ def generate_report(models: Dict[str, dict], output_dir: Path):
             lines.append(f"- **{label}:** Model {winner[0]} ({winner[1]:.3f})")
     lines.append("")
 
+    # Performance and Resources summary
+    lines.append("## 3. Performance & Resource Requirements")
+    lines.append("")
+    lines.append("| Model | Params | Size (MB) | Inference (ms/sample) | Train Epoch (s) |")
+    lines.append("|-------|--------|-----------|-----------------------|-----------------|")
+    
+    for key in model_keys:
+        m = load_metrics(models[key]["output_dir"])
+        if m is None:
+            lines.append(f"| **{key}** | — | — | — | — |")
+            continue
+        params = m.get("total_params", float("nan"))
+        size_mb = m.get("model_size_mb", float("nan"))
+        inf_ms = m.get("inference_time_ms", float("nan"))
+        ep_s = m.get("epoch_time_s", float("nan"))
+        
+        # Format params nicely if it's a valid number
+        params_str = f"{params:,.0f}" if not np.isnan(params) else "—"
+        size_str = f"{size_mb:.2f}" if not np.isnan(size_mb) else "—"
+        inf_str = f"{inf_ms:.2f}" if not np.isnan(inf_ms) else "—"
+        ep_str = f"{ep_s:.2f}" if not np.isnan(ep_s) else "—"
+        
+        lines.append(
+            f"| **{key}** | {params_str} | {size_str} | {inf_str} | {ep_str} |"
+        )
+    lines.append("")
+
     # Training dynamics summary
-    lines.append("## 3. Training Dynamics")
+    lines.append("## 4. Training Dynamics")
     lines.append("")
     lines.append("| Model | Best Epoch | Best Val Loss | Final Train Loss | Overfit? |")
     lines.append("|-------|-----------|---------------|------------------|----------|")
@@ -492,7 +638,7 @@ def generate_report(models: Dict[str, dict], output_dir: Path):
     lines.append("")
 
     # Architecture comparison
-    lines.append("## 4. Architecture Insights")
+    lines.append("## 5. Architecture Insights")
     lines.append("")
     lines.append("### CNN Backbone Effect")
     lines.append("")
@@ -535,7 +681,7 @@ def generate_report(models: Dict[str, dict], output_dir: Path):
     lines.append("")
 
     # File paths
-    lines.append("## 5. Output Files")
+    lines.append("## 6. Output Files")
     lines.append("")
     lines.append("| Model | Checkpoint | History | Predictions | Metrics |")
     lines.append("|-------|-----------|---------|-------------|---------|")
@@ -593,14 +739,21 @@ def main():
 
     print("\n[3/6] Generating predicted vs actual plots...")
     plot_predicted_vs_actual(models, graphs_dir)
+    plot_combined_predicted_vs_actual(models, graphs_dir)
 
     print("\n[4/6] Generating residual distribution...")
     plot_residual_distribution(models, graphs_dir)
 
-    print("\n[5/6] Generating model params comparison...")
-    plot_model_params(graphs_dir)
+    print("\n[5/8] Generating model params comparison...")
+    plot_model_params(models, graphs_dir)
 
-    print("\n[6/6] Generating comparison report...")
+    print("\n[6/8] Generating model size comparison...")
+    plot_model_size(models, graphs_dir)
+    
+    print("\n[7/8] Generating inference speed comparison...")
+    plot_inference_speed(models, graphs_dir)
+
+    print("\n[8/8] Generating comparison report...")
     generate_report(models, reports_dir)
 
     print("\n" + "=" * 60)
