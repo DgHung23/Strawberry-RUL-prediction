@@ -11,5 +11,3 @@ ipykernel
 fastapi
 uvicorn
 python-multipart
-
-ltn test

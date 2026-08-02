@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -13,9 +17,13 @@ from eol import main as eol_main
 from manifests import main as manifests_main
 from consolidate_final import main as consolidate_final_main
 from generate_final_labels import generate_final_labels as generate_final_labels_main
-from fake_data import generate_fake_env_data as fake_data_main
 from generate_metadata import generate_metadata as generate_metadata_main
 from split_data import main as split_data_main
+from sensor_mapping import remap_final_labels as sensor_mapping_main
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+CONFIG_PATH = Path(__file__).resolve().parent / "config.json"
 
 def run_step(name, func):
 
@@ -30,7 +38,47 @@ def run_step(name, func):
         print(e)
         raise
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run the strawberry preprocessing pipeline.")
+    parser.add_argument(
+        "--sensor-csv",
+        type=Path,
+        default=None,
+        help="Path to a real strawberry sensor CSV with timestamp, temperature_c, and humidity_pct.",
+    )
+    parser.add_argument(
+        "--sensor-tolerance-minutes",
+        type=int,
+        default=45,
+        help="Nearest-timestamp tolerance for matching frames to sensor readings.",
+    )
+    return parser.parse_args()
+
+
+def load_pipeline_config() -> dict:
+    if not CONFIG_PATH.exists():
+        return {}
+    with CONFIG_PATH.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
 def main():
+    args = parse_args()
+    configs = load_pipeline_config()
+    configured_sensor = configs.get("sensor_csv")
+    sensor_csv = args.sensor_csv or (Path(configured_sensor) if configured_sensor else None)
+    if sensor_csv is None:
+        candidate = PROJECT_ROOT / "data" / "01_raw" / "strawberry" / "sensor_readings.csv"
+        sensor_csv = candidate
+    elif not sensor_csv.is_absolute():
+        sensor_csv = PROJECT_ROOT / sensor_csv
+    if not sensor_csv.exists():
+        raise FileNotFoundError(
+            "No real strawberry sensor CSV was provided. Pass --sensor-csv or set "
+            "stage3_preprocessing/config.json -> sensor_csv to a real file."
+        )
+
     # Step 0: Extract frames from videos
     run_step("Extract Frames", extracting_frames_main)
     
@@ -58,8 +106,15 @@ def main():
     # Step 8: Label remaining useful life (RUL), time_gap, and elapsed_time
     run_step("Label RUL and Temporal Features", generate_final_labels_main)
 
-    # Step 9: Generate fake temperature and humidity data
-    run_step("Generate Environment Data (fake_data.py)", fake_data_main)
+    # Step 9: Map real sensor data into each fruit label file
+    run_step(
+        "Map Real Sensor Data",
+        lambda: sensor_mapping_main(
+            PROJECT_ROOT,
+            sensor_csv,
+            tolerance=f"{args.sensor_tolerance_minutes}min",
+        ),
+    )
 
     # Step 10: Generate consolidated metadata.csv
     run_step("Generate Metadata CSV", generate_metadata_main)

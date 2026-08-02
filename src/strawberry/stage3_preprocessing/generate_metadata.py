@@ -34,6 +34,11 @@ def generate_metadata():
         "elapsed_hours",
         "temperature_c",
         "humidity_pct",
+        "sensor_timestamp",
+        "mapping_method",
+        "mapping_delta_seconds",
+        "environment_source",
+        "sensor_status",
         "rul_hours",
         "eol_timestamp",
         "label_status"

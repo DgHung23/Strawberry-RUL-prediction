@@ -2,7 +2,15 @@
     "active_dataset": "strawberry",
 
     "model": {
-        "path": "models/model_D/best_model.pth"
+        "path": "models/strawberry/production/model_D/best_model.pt",
+        "key": "D",
+        "seq_len": 8,
+        "fusion_mode": "image_only",
+        "temporal_pooling": "last_mean_max",
+        "hidden_size": 160,
+        "env_hidden_size": 64,
+        "dropout": 0.25,
+        "backbone_dropout": 0.1
     },
 
     "image": {

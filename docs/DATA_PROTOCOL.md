@@ -14,8 +14,8 @@ This protocol defines how raw and processed data must be recorded so avocado and
 | `frame_id` | Sequential frame or sample number | Yes for images |
 | `source_path` | Path to the raw source file | Yes |
 | `image_path` | Path to processed/model-ready image | Yes after preprocessing |
-| `temperature_c` | Room/box temperature aligned by timestamp | Required for current MVP when sensor logs are available; optional for legacy/prototype data |
-| `humidity_pct` | Room/box humidity aligned by timestamp | Required for current MVP when sensor logs are available; optional for legacy/prototype data |
+| `temperature_c` | Room/box temperature aligned from a real sensor timestamp | Required for strawberry MVP; missing only when no sensor reading is matched |
+| `humidity_pct` | Room/box humidity aligned from a real sensor timestamp | Required for strawberry MVP; missing only when no sensor reading is matched |
 | `firmness_avg` | Daily average firmness for that fruit | Avocado only |
 | `firmness_n` | Number of firmness points measured | Avocado only |
 | `valid_frame` | Whether frame is allowed in model-ready manifests | Yes after QC |
@@ -76,6 +76,8 @@ Every processed image must trace back to one capture timestamp.
 
 Environmental data is measured once for the box/room, not per fruit. Map temperature and humidity to frames by timestamp. Prefer exact timestamp joins when sensor and frame timestamps match. If the sensor frequency differs, use the nearest timestamp within a documented tolerance and record the mapping method in the report.
 
+For the current strawberry workflow, temperature and humidity must come from a real sensor CSV or remain missing. Do not invent environment values for training, evaluation, notebooks, or backend predictions.
+
 Hung must confirm the exact mapping behavior used by the current acquisition system before the mapping report is treated as final.
 
 Required mapping report fields:
@@ -83,6 +85,14 @@ Required mapping report fields:
 ```text
 image_path,timestamp,sensor_timestamp,temperature_c,humidity_pct,mapping_method,mapping_delta_seconds
 ```
+
+Recommended strawberry sensor CSV columns:
+
+```text
+timestamp,temperature_c,humidity_pct
+```
+
+Accepted aliases are `temperature` for `temperature_c` and `humidity_rh` for `humidity_pct`.
 
 ## Firmness Mapping
 

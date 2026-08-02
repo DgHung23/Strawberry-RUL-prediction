@@ -1,1 +1,0 @@
-{"model": "Model_B", "mae": 1.4751920163511603, "rmse": 1.7933821770970746, "mape": 15.833442086173733, "r2": 0.7568317937995634, "train_sequences": 1000, "val_sequences": 200, "test_sequences": 200, "total_params": 3160035, "trainable_params": 3160035, "inference_time_ms": 2.5, "epoch_time_s": 95, "model_size_mb": 12.1}
