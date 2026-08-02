@@ -26,11 +26,6 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 TEMP_RANGE_C = (0.0, 60.0)
 HUMIDITY_RANGE_PCT = (0.0, 100.0)
 
-# ---------------------------------------------------------------------------
-# [MOI] Mau vo nhua (xanh reu dam) cua dong ho do nhiet/am, dung de tu dong
-# dinh vi vi tri sensor trong khung hinh thay vi toa do pixel co dinh.
-# Hieu chinh lai 2 gia tri nay neu mau vo sensor thuc te khac biet nhieu.
-# ---------------------------------------------------------------------------
 SENSOR_CASING_HSV_LOWER = np.array([35, 30, 20])
 SENSOR_CASING_HSV_UPPER = np.array([95, 255, 160])
 SENSOR_CASING_MIN_AREA = 800
@@ -86,10 +81,6 @@ def _natural_sort_key(path: Path):
     return [int(part) if part.isdigit() else part.lower() for part in re.split(r"(\d+)", path.name)]
 
 
-# ---------------------------------------------------------------------------
-# [MOI] Ham dinh vi vo sensor theo mau sac, thay the cho toa do pixel co dinh.
-# Tra ve (x1, y1, x2, y2) hoac None neu khong tim thay.
-# ---------------------------------------------------------------------------
 def locate_sensor_casing(image: np.ndarray) -> Optional[tuple[int, int, int, int]]:
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     mask = cv2.inRange(hsv, SENSOR_CASING_HSV_LOWER, SENSOR_CASING_HSV_UPPER)
@@ -127,8 +118,6 @@ def build_candidate_rois(image: np.ndarray) -> list[tuple[str, np.ndarray]]:
     h, w = image.shape[:2]
     rois: list[tuple[str, np.ndarray]] = []
 
-    # [MOI] Uu tien 1: crop dung vung LCD tim duoc theo mau vo sensor.
-    # Vung nay se duoc upscale manh hon o preprocess_for_ocr (xem aggressive=True).
     casing_box = locate_sensor_casing(image)
     if casing_box is not None:
         x1, y1, x2, y2 = casing_box
@@ -136,8 +125,6 @@ def build_candidate_rois(image: np.ndarray) -> list[tuple[str, np.ndarray]]:
         if casing_crop.size:
             rois.append(("sensor_lcd_auto", casing_crop))
 
-    # Cac ROI cu giu lai lam fallback neu khong dinh vi duoc vo sensor
-    # (vi du anh qua toi, vo sensor bi che, mau lech ngoai nguong HSV...)
     specs = [
         ("full", 0.00, 0.00, 1.00, 1.00),
         ("top_left", 0.00, 0.00, 0.40, 0.35),
@@ -159,9 +146,7 @@ def build_candidate_rois(image: np.ndarray) -> list[tuple[str, np.ndarray]]:
 
 
 def preprocess_for_ocr(crop: np.ndarray, aggressive: bool = False) -> list[np.ndarray]:
-    # [SUA] them tham so aggressive: True cho vung LCD nho da duoc crop sat
-    # (chu so nhiet do rat nho so voi chu so am, can phong to nhieu hon
-    # thi PaddleOCR moi doc duoc on dinh).
+
     scaled = _resize_for_ocr(crop, aggressive=aggressive)
     gray = cv2.cvtColor(scaled, cv2.COLOR_BGR2GRAY)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -187,8 +172,7 @@ def _resize_for_ocr(
     max_side: int = 1600,
     aggressive: bool = False,
 ) -> np.ndarray:
-    # [SUA] khi aggressive=True (vung LCD nho da crop sat), tang nguong
-    # min_side/max_side de chu so nhiet do (font nho hon) co du pixel doc duoc.
+
     if aggressive:
         min_side = max(min_side, 900)
         max_side = max(max_side, 2400)
@@ -243,8 +227,6 @@ def extract_sensor_values(text_items: Iterable[tuple[str, float]]) -> tuple[Opti
     joined = " ".join(text for text, _ in items)
     normalized = _normalize_sensor_text(joined)
 
-    # [DA SUA truoc do] bo nhan "t" va "%" qua chung chung khoi danh sach label,
-    # tranh gan nham gia tri khi OCR dinh dau "%" vao sai con so.
     temperature = _extract_labeled_value(
         normalized,
         labels=("temp", "temperature", "temperat", "celsius", "degc"),
@@ -313,11 +295,6 @@ def _extract_numbers(text: str) -> list[float]:
     return values
 
 
-# [MOI] Giong _extract_numbers nhung giu them thong tin token co dau cham
-# thap phan hay khong. Man LCD hay bi PaddleOCR doc mat dau "." (vi du
-# "25.7" -> "257"), nen can biet token nao "chac chan" da co dau cham
-# (tin tuong tuyet doi) va token nao la so nguyen tho (co the la nhiet do
-# bi mat dau cham, hoac la do am, hoac la nhieu OCR).
 def _extract_numbers_with_meta(text: str) -> list[tuple[float, bool]]:
     results: list[tuple[float, bool]] = []
     for token in re.findall(r"-?\d{1,3}(?:\.\d{1,2})?", text):
@@ -329,16 +306,7 @@ def _extract_numbers_with_meta(text: str) -> list[tuple[float, bool]]:
 
 
 def _infer_unlabeled_values(numbers_meta: list[tuple[float, bool]]) -> tuple[Optional[float], Optional[float]]:
-    # [SUA] logic doan gia tri khi khong co nhan text ro rang, viet lai de:
-    #   1) uu tien so da co dau cham thap phan (do OCR doc dung) hon la
-    #      so nguyen tho phai doan;
-    #   2) neu khong co so nao co dau cham, thu doan "mat dau cham": mot
-    #      so nguyen 3 chu so (vi du 257) rat co the la nhiet do bi doc
-    #      mat dau "." (25.7). Chi ap dung khi chia 10 ra dung khoang
-    #      nhiet do hop ly (5-45), tranh doan bay ba.
-    #   3) khi co nhieu ung vien, uu tien so xuat hien NHIEU LAN NHAT trong
-    #      raw text (vi preprocess_for_ocr chay 3 bien the anh, so doc dung
-    #      thuong lap lai, con manh vun nhieu OCR thuong chi xuat hien 1 lan).
+
     from collections import Counter
 
     humidity_candidates = [value for value, _ in numbers_meta if 20.0 <= value <= HUMIDITY_RANGE_PCT[1]]
@@ -399,8 +367,7 @@ def ocr_frame(frame_path: Path, ocr=None) -> SensorReading:
 
     best = (None, None, 0.0, "")
     for name, crop in build_candidate_rois(image):
-        # [SUA] chi bat aggressive upscale cho vung LCD da duoc dinh vi/crop sat,
-        # cac ROI fallback rong (full, top_right...) van dung muc phong dai binh thuong.
+        
         is_dedicated_lcd_crop = name == "sensor_lcd_auto"
 
         all_items: list[tuple[str, float]] = []
