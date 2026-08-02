@@ -6,9 +6,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from time_compression import compress_recording_timestamp
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_PROCESSED_ROOT = PROJECT_ROOT / "data" / "02_processed" / "strawberry"
+DEFAULT_PROCESSED_ROOT = PROJECT_ROOT / "data" / "02_processed" /"strawberry"
 DEFAULT_OUTPUT_DIR = DEFAULT_PROCESSED_ROOT / "final"
 DEFAULT_FRUIT_IDS = [f"F{i:02d}" for i in range(1, 7)]
 
@@ -125,6 +127,8 @@ def collect_images(processed_root: Path, output_dir: Path, fruit_ids: list[str])
 
                 frame_id, filename_fruit_id, timestamp = parsed
 
+                compressed_timestamp = compress_recording_timestamp(timestamp)
+
                 if filename_fruit_id != fruit_id:
                     skipped.append((str(image_path), "fruit_id_mismatch"))
                     continue
@@ -132,7 +136,7 @@ def collect_images(processed_root: Path, output_dir: Path, fruit_ids: list[str])
                 final_name = build_final_name(
                     frame_id=frame_id,
                     fruit_id=fruit_id,
-                    timestamp=timestamp,
+                    timestamp=compressed_timestamp,
                 )
                 final_path = unique_path(output_dir / fruit_id / final_name, used_paths)
 
@@ -143,7 +147,7 @@ def collect_images(processed_root: Path, output_dir: Path, fruit_ids: list[str])
                         source_date=date_text,
                         fruit_id=fruit_id,
                         frame_id=frame_id,
-                        timestamp=timestamp,
+                        timestamp=compressed_timestamp,
                     )
                 )
 

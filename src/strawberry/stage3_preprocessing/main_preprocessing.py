@@ -17,6 +17,10 @@ from eol import main as eol_main
 from manifests import main as manifests_main
 from consolidate_final import main as consolidate_final_main
 from generate_final_labels import generate_final_labels as generate_final_labels_main
+<<<<<<< HEAD
+=======
+from sensor_ocr import main as sensor_ocr_main
+>>>>>>> 85deb16e504d50b57c73d77335b0ccec3805957a
 from generate_metadata import generate_metadata as generate_metadata_main
 from split_data import main as split_data_main
 from sensor_mapping import remap_final_labels as sensor_mapping_main
@@ -80,16 +84,16 @@ def main():
         )
 
     # Step 0: Extract frames from videos
-    run_step("Extract Frames", extracting_frames_main)
+    #run_step("Extract Frames", extracting_frames_main)
     
     # Step 1: Crop images to focus on strawberries
     run_step("Crop Images", crop_images_main)
     
-    # Step 2: Segment strawberries from the background
-    run_step("Segmentation", segmentation_main)
-
-    # Step 3: Perform frame differencing and validate masks
+    # Step 2: Perform frame differencing and validate masks
     run_step("Frame Differencing", frame_differencing_main)
+
+    # Step 3: Segment strawberries from the background
+    run_step("Segmentation", segmentation_main)
 
     # Step 4: Assign unique IDs to each strawberry
     run_step("Assign IDs", assign_id_main)
@@ -103,9 +107,10 @@ def main():
     # Step 7: Consolidate final dataset and manifest
     run_step("Consolidate Final Dataset", consolidate_final_main)
 
-    # Step 8: Label remaining useful life (RUL), time_gap, and elapsed_time
+    # Step 8: Label remaining useful life (RUL)
     run_step("Label RUL and Temporal Features", generate_final_labels_main)
 
+<<<<<<< HEAD
     # Step 9: Map real sensor data into each fruit label file
     run_step(
         "Map Real Sensor Data",
@@ -115,6 +120,10 @@ def main():
             tolerance=f"{args.sensor_tolerance_minutes}min",
         ),
     )
+=======
+    # Step 9: OCR temperature and humidity from sensor display
+    run_step("Sensor OCR Environment Data", sensor_ocr_main)
+>>>>>>> 85deb16e504d50b57c73d77335b0ccec3805957a
 
     # Step 10: Generate consolidated metadata.csv
     run_step("Generate Metadata CSV", generate_metadata_main)

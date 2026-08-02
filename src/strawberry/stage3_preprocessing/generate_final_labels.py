@@ -2,6 +2,8 @@ import pandas as pd
 from pathlib import Path
 import os
 
+from time_compression import compress_recording_timestamp
+
 def make_relative(p_str, project_root):
     if pd.isna(p_str) or not p_str:
         return ""
@@ -28,12 +30,12 @@ def generate_final_labels():
     # 26/03/2026 8:00:06 -> F01, F03, F04, F06
     # 28/03/2026 8:00:06 -> F02, F05
     eol_map = {
-        "F01": pd.to_datetime("2026-03-26 08:00:06"),
-        "F03": pd.to_datetime("2026-03-26 08:00:06"),
-        "F04": pd.to_datetime("2026-03-26 08:00:06"),
-        "F06": pd.to_datetime("2026-03-26 08:00:06"),
-        "F02": pd.to_datetime("2026-03-28 08:00:06"),
-        "F05": pd.to_datetime("2026-03-28 08:00:06")
+        "F01": compress_recording_timestamp(pd.to_datetime("2026-03-26 08:00:06").to_pydatetime()),
+        "F03": compress_recording_timestamp(pd.to_datetime("2026-03-26 08:00:06").to_pydatetime()),
+        "F04": compress_recording_timestamp(pd.to_datetime("2026-03-26 08:00:06").to_pydatetime()),
+        "F06": compress_recording_timestamp(pd.to_datetime("2026-03-26 08:00:06").to_pydatetime()),
+        "F02": compress_recording_timestamp(pd.to_datetime("2026-03-28 08:00:06").to_pydatetime()),
+        "F05": compress_recording_timestamp(pd.to_datetime("2026-03-28 08:00:06").to_pydatetime())
     }
     
     # Map EOL timestamp to df
@@ -47,7 +49,7 @@ def generate_final_labels():
     df["experiment_id"] = "RUL_FINAL"
     df["fruit_type"] = "strawberry"
     df["roi_id"] = df["fruit_id"]
-    df["image_path"] = df["final_path"].apply(lambda p: make_relative(p, project_root))
+    df["image_path"] = df["final_path"].apply(lambda p: make_relative(p, final_dir))
     df["raw_path"] = df["source_path"].apply(lambda p: make_relative(p, project_root))
     df["temperature_c"] = pd.NA
     df["humidity_pct"] = pd.NA
@@ -58,7 +60,7 @@ def generate_final_labels():
     df["eol_basis"] = "manual"
     df["label_status"] = "approved"
     
-    # Output columns list based on label_rul.py + time_gap_hours & elapsed_hours
+    # Output columns list based on label_rul.py
     output_columns = [
         "experiment_id",
         "fruit_type",
@@ -67,8 +69,6 @@ def generate_final_labels():
         "image_path",
         "raw_path",
         "timestamp",
-        "time_gap_hours",
-        "elapsed_hours",
         "eol_timestamp",
         "rul_hours",
         "temperature_c",
@@ -89,16 +89,6 @@ def generate_final_labels():
         output_csv = fruit_dir / "labels.csv"
         
         fruit_df = group.copy().sort_values(by="timestamp").reset_index(drop=True)
-        
-        # Calculate time_gap_hours & elapsed_hours
-        first_ts = fruit_df["timestamp"].iloc[0]
-        time_gaps = [0.0]
-        for i in range(1, len(fruit_df)):
-            gap = (fruit_df["timestamp"].iloc[i] - fruit_df["timestamp"].iloc[i - 1]).total_seconds() / 3600.0
-            time_gaps.append(round(gap, 4))
-        
-        fruit_df["time_gap_hours"] = time_gaps
-        fruit_df["elapsed_hours"] = ((fruit_df["timestamp"] - first_ts).dt.total_seconds() / 3600.0).round(4)
         
         fruit_df_out = fruit_df[output_columns].copy()
         
