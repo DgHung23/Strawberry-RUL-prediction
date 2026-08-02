@@ -4,6 +4,8 @@ import pandas as pd
 import json
 import re
 
+from time_compression import compress_recording_timestamp
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -42,9 +44,11 @@ def parse_datetime(date_str: str, filename: str):
 
         hh, mm, ss = match.groups()
 
-        return datetime.strptime(
-            f"{date_str} {hh}:{mm}:{ss}",
-            "%d-%m-%Y %H:%M:%S"
+        return compress_recording_timestamp(
+            datetime.strptime(
+                f"{date_str} {hh}:{mm}:{ss}",
+                "%d-%m-%Y %H:%M:%S"
+            )
         )
 
     else:
@@ -468,5 +472,4 @@ def main():
     ) 
     
 if __name__ == "__main__":
-    main()  
-
+    main()

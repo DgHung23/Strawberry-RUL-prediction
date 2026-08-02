@@ -212,7 +212,7 @@ def main():
     
     environment_csv = (
         MANIFEST_DIR
-        / "env.csv"  # CHANGE YOUR CSV NAME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        / "numeric_mapping.csv"  # filled by sensor_ocr.py
     )
     
     firmness_csv = (

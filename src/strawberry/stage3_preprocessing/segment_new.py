@@ -43,14 +43,6 @@ grabcut_outer_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (19, 19))
 # Segmentation functions  (unchanged from original backup)
 # ---------------------------------------------------------------------------
 
-def balance_lighting(image):
-    lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    l_channel, a_channel, b_channel = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    balanced_l = clahe.apply(l_channel)
-    balanced_lab = cv2.merge([balanced_l, a_channel, b_channel])
-    return cv2.cvtColor(balanced_lab, cv2.COLOR_LAB2BGR)
-
 def create_strawberry_candidate_mask(hsv):
     mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
     for lower, upper in STRAWBERRY_COLOR_RANGES:
@@ -174,11 +166,9 @@ def segment_image(img_path: Path, output_dir: Path, clear_old: bool = True) -> i
 
     h, w = img.shape[:2]
     print(f"  --- Segmenting: {base_name} ({w}x{h}) ---")
-    # Balance local lighting before HSV thresholding.
-    balanced_img = balance_lighting(img)
 
     #convert image to HSV color space and create masks for strawberry-colored regions
-    hsv = cv2.cvtColor(balanced_img, cv2.COLOR_BGR2HSV)
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     thresh = create_strawberry_candidate_mask(hsv)
 
     #find contours of the thresholded image to get bounding boxes for potential strawberries

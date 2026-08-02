@@ -42,7 +42,7 @@ processed_root = data_root / "02_processed" / "strawberry"
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-sample_minutes = 15
+sample_minutes = 8
 save_workers = max(1, min(8, os.cpu_count() or 1)) # use between 1 and 8 threads for saving frames, can adjust based on performance needs and available CPU cores, for example if your CPU has 4 cores, you can set to 4 or 8 for better performance, but if you have only 2 cores, setting to 8 may cause more overhead than benefit, so adjust accordingly
 max_pending_writes = save_workers * 4 # limit the number of pending writes to avoid memory issues, can adjust based on available memory and performance needs
 
@@ -144,7 +144,7 @@ def main():
                         cap.release()
                         continue
 
-                    interval = max(1, int(fps * 60 * sample_minutes)) # 1 frame every 5 minutes
+                    interval = max(1, int(fps * 60 * sample_minutes)) # 1 frame every 8 minutes
 
                     frame_count = 0
 

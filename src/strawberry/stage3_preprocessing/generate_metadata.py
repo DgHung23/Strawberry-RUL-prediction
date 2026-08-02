@@ -30,8 +30,6 @@ def generate_metadata():
         "image_path",
         "raw_path",
         "timestamp",
-        "time_gap_hours",
-        "elapsed_hours",
         "temperature_c",
         "humidity_pct",
         "rul_hours",
