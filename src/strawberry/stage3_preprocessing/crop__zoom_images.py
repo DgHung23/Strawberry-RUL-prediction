@@ -31,13 +31,6 @@ def is_strawberry_folder(folder_name):
         re.match(r"^frames_\d{2}-\d{2}-\d{4}$", folder_name)
     )
 
-
-
-# collect input for strawberry
-
-
-
-
 def center_crop(image, target_width, target_height):
     height, width = image.shape[:2]
     if width < target_width or height < target_height:
