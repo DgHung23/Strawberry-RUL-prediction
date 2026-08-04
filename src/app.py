@@ -10,8 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 SRC_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SRC_DIR.parent
+STRAWBERRY_DIR = SRC_DIR / "strawberry"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
+if str(STRAWBERRY_DIR) not in sys.path:
+    sys.path.insert(0, str(STRAWBERRY_DIR))
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -19,7 +22,7 @@ from api.routes import router
 from services.predictor import FruitRULPredictor
 
 
-CONFIG_PATH = SRC_DIR / "config_app" / "config.json"
+CONFIG_PATH = STRAWBERRY_DIR / "config_app" / "config.json"
 
 
 def load_config() -> dict:

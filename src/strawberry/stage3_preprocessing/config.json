@@ -1,6 +1,7 @@
 {
     "active_dataset": "strawberry",
     "processed_dir": "data/02_processed/strawberry",
+    "sensor_csv": null,
 
     "datasets": {
         "strawberry": {
