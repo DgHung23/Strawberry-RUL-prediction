@@ -1,0 +1,38 @@
+{
+  "run_root": "output\\runs\\strawberry\\strawberry_loocv_seq8_image_only",
+  "folds": 24,
+  "model_summary": [
+    {
+      "model_key": "A",
+      "test_mae_mean": 15.234565893809,
+      "test_mae_std": 8.36171524803491,
+      "test_rmse_mean": 17.417903820673626,
+      "test_r2_mean": 0.4237678625983494,
+      "test_smape_mean": 46.33033275604248
+    },
+    {
+      "model_key": "B",
+      "test_mae_mean": 15.055813233057657,
+      "test_mae_std": 5.434116649127001,
+      "test_rmse_mean": 17.932440916697185,
+      "test_r2_mean": 0.45311779296834925,
+      "test_smape_mean": 43.07378101348877
+    },
+    {
+      "model_key": "C",
+      "test_mae_mean": 15.900912284851074,
+      "test_mae_std": 6.9506385472477055,
+      "test_rmse_mean": 19.217419147491455,
+      "test_r2_mean": 0.35936549143752666,
+      "test_smape_mean": 44.858734130859375
+    },
+    {
+      "model_key": "D",
+      "test_mae_mean": 14.00960930188497,
+      "test_mae_std": 6.8756985328640825,
+      "test_rmse_mean": 16.90156586964925,
+      "test_r2_mean": 0.4881580266649261,
+      "test_smape_mean": 39.649569511413574
+    }
+  ]
+}

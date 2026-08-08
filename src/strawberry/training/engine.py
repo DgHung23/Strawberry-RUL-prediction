@@ -301,6 +301,62 @@ def _build_run_paths(project_root: Path, config: TrainingConfig, model_key: str,
     return run_root, checkpoint_root, run_root / "predictions.csv"
 
 
+def _fold_result_to_row(fold_result: FoldResult) -> dict[str, object]:
+    return {
+        "model_key": fold_result.model_key,
+        "fold_name": fold_result.fold_name,
+        "test_group": fold_result.test_group,
+        "val_group": fold_result.val_group,
+        "best_epoch": fold_result.best_epoch,
+        "best_val_mae": fold_result.best_val_mae,
+        "test_mae": fold_result.test_mae,
+        "test_rmse": fold_result.test_rmse,
+        "test_r2": fold_result.test_r2,
+        "test_smape": fold_result.test_smape,
+        "checkpoint_path": fold_result.checkpoint_path,
+        "history_path": fold_result.best_history_path,
+        "prediction_path": fold_result.prediction_path,
+    }
+
+
+def _completed_fold_row(
+    project_root: Path,
+    config: TrainingConfig,
+    model_key: str,
+    fold_split: FoldSplit,
+) -> dict[str, object] | None:
+    run_root, _, prediction_path = _build_run_paths(project_root, config, model_key, fold_split.fold_name)
+    metrics_path = run_root / "metrics.json"
+    history_path = run_root / "history.csv"
+    if not metrics_path.exists():
+        return None
+    if not history_path.exists() or not prediction_path.exists():
+        return None
+
+    with metrics_path.open("r", encoding="utf-8") as handle:
+        metrics_payload = json.load(handle)
+    test_metrics = metrics_payload.get("test_metrics", {})
+    required_metric_keys = {"mae", "rmse", "r2", "smape"}
+    if not required_metric_keys.issubset(test_metrics):
+        return None
+
+    return {
+        "model_key": str(metrics_payload.get("model_key", model_key)),
+        "fold_name": str(metrics_payload.get("fold_name", fold_split.fold_name)),
+        "test_group": str(metrics_payload.get("test_group", fold_split.test_group)),
+        "val_group": str(metrics_payload.get("val_group", fold_split.val_group)),
+        "best_epoch": int(metrics_payload["best_epoch"]),
+        "best_val_mae": float(metrics_payload["best_val_mae"]),
+        "test_mae": float(test_metrics["mae"]),
+        "test_rmse": float(test_metrics["rmse"]),
+        "test_r2": float(test_metrics["r2"]),
+        "test_smape": float(test_metrics["smape"]),
+        "checkpoint_path": str(metrics_payload.get("checkpoint_path", "")),
+        "history_path": str(history_path),
+        "prediction_path": str(prediction_path),
+    }
+
+
 def train_single_fold(
     model_key: str,
     fold_split: FoldSplit,
@@ -311,6 +367,12 @@ def train_single_fold(
 ) -> FoldResult:
     device = _device()
     run_root, checkpoint_root, prediction_path = _build_run_paths(project_root, config, model_key, fold_split.fold_name)
+    print(
+        f"[START] model={model_key} fold={fold_split.fold_name} "
+        f"test={fold_split.test_group} val={fold_split.val_group} "
+        f"train_groups={','.join(fold_split.train_groups)}",
+        flush=True,
+    )
     split_root = project_root / "data" / "03_split" / "strawberry"
     metadata_path = split_root / "metadata.csv"
     train_frame_df = load_metadata(metadata_path, project_root=project_root, split_root=split_root)
@@ -397,6 +459,12 @@ def train_single_fold(
             amp_enabled=config.amp,
         )
         scheduler.step(val_metrics["mae"])
+        print(
+            f"[EPOCH] model={model_key} fold={fold_split.fold_name} epoch={epoch}/{config.epochs} "
+            f"train_mae={train_metrics['mae']:.4f} val_mae={val_metrics['mae']:.4f} "
+            f"val_rmse={val_metrics['rmse']:.4f} lr={optimizer.param_groups[0]['lr']:.6g}",
+            flush=True,
+        )
         history_rows.append(
             {
                 "epoch": epoch,
@@ -434,6 +502,11 @@ def train_single_fold(
         else:
             patience_left -= 1
             if patience_left <= 0:
+                print(
+                    f"[EARLY_STOP] model={model_key} fold={fold_split.fold_name} "
+                    f"epoch={epoch} best_epoch={best_epoch} best_val_mae={best_val_mae:.4f}",
+                    flush=True,
+                )
                 break
 
     best_checkpoint = torch.load(best_path, map_location=device)
@@ -449,6 +522,12 @@ def train_single_fold(
         amp_enabled=config.amp,
     )
     prediction_df.to_csv(prediction_path, index=False)
+    print(
+        f"[DONE] model={model_key} fold={fold_split.fold_name} best_epoch={best_epoch} "
+        f"best_val_mae={best_val_mae:.4f} test_mae={test_metrics['mae']:.4f} "
+        f"test_rmse={test_metrics['rmse']:.4f} test_r2={test_metrics['r2']:.4f}",
+        flush=True,
+    )
 
     history_df = pd.DataFrame(history_rows)
     history_path = run_root / "history.csv"
@@ -508,15 +587,33 @@ def train_loocv_run(
         raise RuntimeError("No sequence windows were generated from the strawberry metadata.")
 
     selected_model_keys = [key.upper() for key in (model_keys or config.model_keys)]
-    results: list[dict[str, object]] = []
     run_root = config.artifact_root_path(root) / config.run_name
     run_root.mkdir(parents=True, exist_ok=True)
     with (run_root / "config.json").open("w", encoding="utf-8") as handle:
         json.dump(config.to_dict(), handle, indent=2)
     sequence_df.to_csv(run_root / "sequence_index.csv", index=False)
 
+    results: list[dict[str, object]] = []
+    fold_results_path = run_root / "fold_results.csv"
+    if fold_results_path.exists():
+        existing_df = pd.read_csv(fold_results_path)
+        if not existing_df.empty and "model_key" in existing_df.columns:
+            keep_existing = existing_df[~existing_df["model_key"].astype(str).str.upper().isin(selected_model_keys)]
+            results.extend(keep_existing.to_dict(orient="records"))
+
     for model_key in selected_model_keys:
+        print(f"[MODEL] Starting {model_key}", flush=True)
         for fold_split in build_loocv_splits(sequence_df, model_key):
+            completed_row = _completed_fold_row(root, config, model_key, fold_split)
+            if completed_row is not None:
+                print(
+                    f"[SKIP] model={model_key} fold={fold_split.fold_name} "
+                    f"already_completed test_mae={completed_row['test_mae']:.4f}",
+                    flush=True,
+                )
+                results.append(completed_row)
+                continue
+
             fold_result = train_single_fold(
                 model_key,
                 fold_split,
@@ -524,25 +621,13 @@ def train_loocv_run(
                 project_root=root,
                 sequence_df=sequence_df,
             )
-            results.append(
-                {
-                    "model_key": fold_result.model_key,
-                    "fold_name": fold_result.fold_name,
-                    "test_group": fold_result.test_group,
-                    "val_group": fold_result.val_group,
-                    "best_epoch": fold_result.best_epoch,
-                    "best_val_mae": fold_result.best_val_mae,
-                    "test_mae": fold_result.test_mae,
-                    "test_rmse": fold_result.test_rmse,
-                    "test_r2": fold_result.test_r2,
-                    "test_smape": fold_result.test_smape,
-                    "checkpoint_path": fold_result.checkpoint_path,
-                    "history_path": fold_result.best_history_path,
-                    "prediction_path": fold_result.prediction_path,
-                }
-            )
+            results.append(_fold_result_to_row(fold_result))
+        print(f"[MODEL] Finished {model_key}", flush=True)
 
     summary_df = pd.DataFrame(results)
+    if not summary_df.empty:
+        summary_df = summary_df.drop_duplicates(["model_key", "fold_name"], keep="last")
+        summary_df = summary_df.sort_values(["model_key", "fold_name"]).reset_index(drop=True)
     summary_df.to_csv(run_root / "fold_results.csv", index=False)
     if not summary_df.empty:
         aggregated = summary_df.groupby("model_key").agg(

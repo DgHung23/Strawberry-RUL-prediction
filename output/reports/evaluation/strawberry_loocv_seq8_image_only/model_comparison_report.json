@@ -1,0 +1,34 @@
+{
+  "run_root": "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\output\\runs\\strawberry\\strawberry_loocv_seq8_image_only",
+  "best_model_by_mae": {
+    "model_key": "D",
+    "folds": 6,
+    "best_epoch_mean": 2.8333333333333335,
+    "val_mae_mean": 12.816782474517822,
+    "val_mae_std": 4.460970878239812,
+    "test_mae_mean": 14.00960930188497,
+    "test_mae_std": 6.8756985328640825,
+    "test_mae_median": 15.639764785766602,
+    "test_mae_min": 5.749039173126221,
+    "test_mae_max": 23.341716766357425,
+    "test_rmse_mean": 16.90156586964925,
+    "test_rmse_std": 7.3909195543096375,
+    "test_r2_mean": 0.4881580266649261,
+    "test_r2_std": 0.41322422615822935,
+    "test_smape_mean": 39.649569511413574,
+    "test_smape_std": 15.048881776602434,
+    "rank_by_mae": 1,
+    "rank_by_rmse": 1,
+    "rank_by_r2": 1
+  },
+  "graph_files": [
+    "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\output\\graphs\\evaluation\\strawberry_loocv_seq8_image_only\\training_curves_comparison.png",
+    "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\output\\graphs\\evaluation\\strawberry_loocv_seq8_image_only\\test_metrics_comparison.png",
+    "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\output\\graphs\\evaluation\\strawberry_loocv_seq8_image_only\\predicted_vs_actual.png",
+    "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\output\\graphs\\evaluation\\strawberry_loocv_seq8_image_only\\residual_distribution.png",
+    "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\output\\graphs\\evaluation\\strawberry_loocv_seq8_image_only\\fold_metrics_heatmap.png",
+    "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\output\\graphs\\evaluation\\strawberry_loocv_seq8_image_only\\fold_mae_by_fruit.png",
+    "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\output\\graphs\\evaluation\\strawberry_loocv_seq8_image_only\\model_stability_boxplots.png",
+    "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\output\\graphs\\evaluation\\strawberry_loocv_seq8_image_only\\model_params_comparison.png"
+  ]
+}

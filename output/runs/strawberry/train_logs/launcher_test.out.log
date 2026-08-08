@@ -1,0 +1,12 @@
+usage: cli.py [-h] {train,evaluate,lab} ...
+
+Strawberry RUL training and lab utilities
+
+positional arguments:
+  {train,evaluate,lab}
+    train               Run LOOCV training for strawberry models
+    evaluate            Summarize a completed training run
+    lab                 Run the small-model lab sweep
+
+options:
+  -h, --help            show this help message and exit

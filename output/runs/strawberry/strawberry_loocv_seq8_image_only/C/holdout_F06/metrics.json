@@ -1,0 +1,31 @@
+{
+  "model_key": "C",
+  "fold_name": "holdout_F06",
+  "test_group": "F06",
+  "val_group": "F01",
+  "best_epoch": 8,
+  "best_val_mae": 7.446393013000488,
+  "test_metrics": {
+    "mae": 20.880023956298828,
+    "rmse": 26.202762603759766,
+    "r2": -0.2512985684950464,
+    "smape": 58.46101760864258,
+    "median_ae": 19.5625,
+    "loss": 0.2777741330423882
+  },
+  "target_scaler": {
+    "center": 45.25,
+    "scale": 34.9295795008021
+  },
+  "env_stats": {
+    "mean": [
+      22.409486770629883,
+      64.70407104492188
+    ],
+    "std": [
+      1.5707838535308838,
+      3.78102970123291
+    ]
+  },
+  "checkpoint_path": "C:\\Users\\admin\\Desktop\\Strawberry-RUL-prediction\\models\\strawberry\\runs\\strawberry_loocv_seq8_image_only\\C\\holdout_F06\\best_model.pt"
+}

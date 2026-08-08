@@ -1,0 +1,2 @@
+OUT=C:\Users\admin\Desktop\Strawberry-RUL-prediction\output\runs\strawberry\train_logs\resume_bcd_20260803_005102.out.log
+ERR=C:\Users\admin\Desktop\Strawberry-RUL-prediction\output\runs\strawberry\train_logs\resume_bcd_20260803_005102.err.log

@@ -1,0 +1,91 @@
+[MODEL] Starting A
+[START] model=A fold=holdout_F01 test=F01 val=F02 train_groups=F03,F04,F05,F06
+[EPOCH] model=A fold=holdout_F01 epoch=1/18 train_mae=9.2329 val_mae=19.5224 val_rmse=21.8477 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=2/18 train_mae=4.7653 val_mae=19.3652 val_rmse=21.3208 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=3/18 train_mae=3.9445 val_mae=21.7140 val_rmse=24.3900 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=4/18 train_mae=3.7932 val_mae=18.7131 val_rmse=20.3366 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=5/18 train_mae=3.3268 val_mae=18.5961 val_rmse=20.3541 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=6/18 train_mae=3.3583 val_mae=19.0664 val_rmse=22.2735 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=7/18 train_mae=3.1040 val_mae=19.0207 val_rmse=21.1143 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=8/18 train_mae=3.2188 val_mae=18.5802 val_rmse=20.4002 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=9/18 train_mae=2.8184 val_mae=18.5996 val_rmse=21.5996 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=10/18 train_mae=2.9892 val_mae=18.6547 val_rmse=20.5205 lr=0.0003
+[EPOCH] model=A fold=holdout_F01 epoch=11/18 train_mae=2.8989 val_mae=19.4791 val_rmse=21.3771 lr=0.00015
+[EPOCH] model=A fold=holdout_F01 epoch=12/18 train_mae=2.2198 val_mae=19.0765 val_rmse=21.0595 lr=0.00015
+[EPOCH] model=A fold=holdout_F01 epoch=13/18 train_mae=2.3053 val_mae=21.8112 val_rmse=24.3885 lr=0.00015
+[EARLY_STOP] model=A fold=holdout_F01 epoch=13 best_epoch=8 best_val_mae=18.5802
+[DONE] model=A fold=holdout_F01 best_epoch=8 best_val_mae=18.5802 test_mae=4.6487 test_rmse=5.7178 test_r2=0.9398
+[START] model=A fold=holdout_F02 test=F02 val=F03 train_groups=F01,F04,F05,F06
+[EPOCH] model=A fold=holdout_F02 epoch=1/18 train_mae=7.9174 val_mae=7.5205 val_rmse=9.2503 lr=0.0003
+[EPOCH] model=A fold=holdout_F02 epoch=2/18 train_mae=4.4559 val_mae=8.6953 val_rmse=10.8715 lr=0.0003
+[EPOCH] model=A fold=holdout_F02 epoch=3/18 train_mae=3.8113 val_mae=7.0855 val_rmse=9.3016 lr=0.0003
+[EPOCH] model=A fold=holdout_F02 epoch=4/18 train_mae=3.5050 val_mae=8.7102 val_rmse=10.6375 lr=0.0003
+[EPOCH] model=A fold=holdout_F02 epoch=5/18 train_mae=3.1193 val_mae=9.5080 val_rmse=10.9942 lr=0.0003
+[EPOCH] model=A fold=holdout_F02 epoch=6/18 train_mae=3.1008 val_mae=7.0419 val_rmse=8.7076 lr=0.0003
+[EPOCH] model=A fold=holdout_F02 epoch=7/18 train_mae=3.0402 val_mae=9.1593 val_rmse=11.2283 lr=0.0003
+[EPOCH] model=A fold=holdout_F02 epoch=8/18 train_mae=2.9242 val_mae=8.5286 val_rmse=11.2267 lr=0.0003
+[EPOCH] model=A fold=holdout_F02 epoch=9/18 train_mae=2.8549 val_mae=11.0321 val_rmse=15.0277 lr=0.00015
+[EPOCH] model=A fold=holdout_F02 epoch=10/18 train_mae=2.3434 val_mae=9.0710 val_rmse=10.4781 lr=0.00015
+[EPOCH] model=A fold=holdout_F02 epoch=11/18 train_mae=2.2551 val_mae=8.6180 val_rmse=10.9066 lr=0.00015
+[EARLY_STOP] model=A fold=holdout_F02 epoch=11 best_epoch=6 best_val_mae=7.0419
+[DONE] model=A fold=holdout_F02 best_epoch=6 best_val_mae=7.0419 test_mae=19.0198 test_rmse=21.4423 test_r2=0.4965
+[START] model=A fold=holdout_F03 test=F03 val=F04 train_groups=F01,F02,F05,F06
+[EPOCH] model=A fold=holdout_F03 epoch=1/18 train_mae=8.7746 val_mae=22.7416 val_rmse=25.6993 lr=0.0003
+[EPOCH] model=A fold=holdout_F03 epoch=2/18 train_mae=4.8066 val_mae=25.6554 val_rmse=27.9198 lr=0.0003
+[EPOCH] model=A fold=holdout_F03 epoch=3/18 train_mae=4.0067 val_mae=25.4533 val_rmse=27.0064 lr=0.0003
+[EPOCH] model=A fold=holdout_F03 epoch=4/18 train_mae=3.7211 val_mae=24.0954 val_rmse=25.5651 lr=0.00015
+[EPOCH] model=A fold=holdout_F03 epoch=5/18 train_mae=2.8060 val_mae=22.3626 val_rmse=23.7968 lr=0.00015
+[EPOCH] model=A fold=holdout_F03 epoch=6/18 train_mae=2.8264 val_mae=18.4965 val_rmse=20.4152 lr=0.00015
+[EPOCH] model=A fold=holdout_F03 epoch=7/18 train_mae=2.6868 val_mae=16.4088 val_rmse=17.6119 lr=0.00015
+[EPOCH] model=A fold=holdout_F03 epoch=8/18 train_mae=2.7657 val_mae=22.1385 val_rmse=23.7514 lr=0.00015
+[EPOCH] model=A fold=holdout_F03 epoch=9/18 train_mae=2.5381 val_mae=19.5104 val_rmse=20.9778 lr=0.00015
+[EPOCH] model=A fold=holdout_F03 epoch=10/18 train_mae=2.5676 val_mae=19.6825 val_rmse=20.8970 lr=7.5e-05
+[EPOCH] model=A fold=holdout_F03 epoch=11/18 train_mae=2.2929 val_mae=19.1441 val_rmse=20.8005 lr=7.5e-05
+[EPOCH] model=A fold=holdout_F03 epoch=12/18 train_mae=2.2295 val_mae=17.9563 val_rmse=19.2781 lr=7.5e-05
+[EARLY_STOP] model=A fold=holdout_F03 epoch=12 best_epoch=7 best_val_mae=16.4088
+[DONE] model=A fold=holdout_F03 best_epoch=7 best_val_mae=16.4088 test_mae=26.3771 test_rmse=27.1360 test_r2=-0.3564
+[START] model=A fold=holdout_F04 test=F04 val=F05 train_groups=F01,F02,F03,F06
+[EPOCH] model=A fold=holdout_F04 epoch=1/18 train_mae=8.7561 val_mae=22.7767 val_rmse=25.1194 lr=0.0003
+[EPOCH] model=A fold=holdout_F04 epoch=2/18 train_mae=5.1360 val_mae=18.9689 val_rmse=20.9015 lr=0.0003
+[EPOCH] model=A fold=holdout_F04 epoch=3/18 train_mae=4.1697 val_mae=16.1073 val_rmse=17.7911 lr=0.0003
+[EPOCH] model=A fold=holdout_F04 epoch=4/18 train_mae=3.8737 val_mae=16.5891 val_rmse=18.1890 lr=0.0003
+[EPOCH] model=A fold=holdout_F04 epoch=5/18 train_mae=3.5326 val_mae=16.8456 val_rmse=18.4278 lr=0.0003
+[EPOCH] model=A fold=holdout_F04 epoch=6/18 train_mae=3.3975 val_mae=16.9236 val_rmse=18.8930 lr=0.00015
+[EPOCH] model=A fold=holdout_F04 epoch=7/18 train_mae=2.7282 val_mae=20.3571 val_rmse=22.2112 lr=0.00015
+[EPOCH] model=A fold=holdout_F04 epoch=8/18 train_mae=2.6335 val_mae=18.7153 val_rmse=20.9363 lr=0.00015
+[EARLY_STOP] model=A fold=holdout_F04 epoch=8 best_epoch=3 best_val_mae=16.1073
+[DONE] model=A fold=holdout_F04 best_epoch=3 best_val_mae=16.1073 test_mae=6.0116 test_rmse=8.1000 test_r2=0.8791
+[START] model=A fold=holdout_F05 test=F05 val=F06 train_groups=F01,F02,F03,F04
+[EPOCH] model=A fold=holdout_F05 epoch=1/18 train_mae=8.7887 val_mae=15.4817 val_rmse=20.0927 lr=0.0003
+[EPOCH] model=A fold=holdout_F05 epoch=2/18 train_mae=5.5463 val_mae=12.8249 val_rmse=16.9890 lr=0.0003
+[EPOCH] model=A fold=holdout_F05 epoch=3/18 train_mae=4.4718 val_mae=14.3060 val_rmse=19.1956 lr=0.0003
+[EPOCH] model=A fold=holdout_F05 epoch=4/18 train_mae=3.9092 val_mae=16.1950 val_rmse=21.4329 lr=0.0003
+[EPOCH] model=A fold=holdout_F05 epoch=5/18 train_mae=3.5747 val_mae=18.9096 val_rmse=24.3558 lr=0.00015
+[EPOCH] model=A fold=holdout_F05 epoch=6/18 train_mae=2.8935 val_mae=15.7684 val_rmse=20.8978 lr=0.00015
+[EPOCH] model=A fold=holdout_F05 epoch=7/18 train_mae=2.8030 val_mae=16.2303 val_rmse=20.5410 lr=0.00015
+[EARLY_STOP] model=A fold=holdout_F05 epoch=7 best_epoch=2 best_val_mae=12.8249
+[DONE] model=A fold=holdout_F05 best_epoch=2 best_val_mae=12.8249 test_mae=16.6571 test_rmse=17.9586 test_r2=0.6468
+[START] model=A fold=holdout_F06 test=F06 val=F01 train_groups=F02,F03,F04,F05
+[EPOCH] model=A fold=holdout_F06 epoch=1/18 train_mae=9.3792 val_mae=15.7123 val_rmse=18.2390 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=2/18 train_mae=5.3204 val_mae=16.3033 val_rmse=17.5270 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=3/18 train_mae=4.2573 val_mae=18.0149 val_rmse=19.6889 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=4/18 train_mae=3.8111 val_mae=13.6741 val_rmse=15.0268 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=5/18 train_mae=3.4340 val_mae=15.0688 val_rmse=16.5546 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=6/18 train_mae=3.5912 val_mae=13.1303 val_rmse=16.3413 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=7/18 train_mae=3.3991 val_mae=16.0599 val_rmse=17.2445 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=8/18 train_mae=3.2841 val_mae=11.9949 val_rmse=13.1900 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=9/18 train_mae=3.1090 val_mae=11.3950 val_rmse=12.9691 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=10/18 train_mae=3.0178 val_mae=14.9315 val_rmse=16.8594 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=11/18 train_mae=2.9971 val_mae=15.7447 val_rmse=18.3563 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=12/18 train_mae=3.0445 val_mae=11.1787 val_rmse=13.1578 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=13/18 train_mae=2.8744 val_mae=16.3223 val_rmse=18.8316 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=14/18 train_mae=2.9612 val_mae=17.1070 val_rmse=18.5783 lr=0.0003
+[EPOCH] model=A fold=holdout_F06 epoch=15/18 train_mae=2.6645 val_mae=14.8844 val_rmse=15.8594 lr=0.00015
+[EPOCH] model=A fold=holdout_F06 epoch=16/18 train_mae=2.4136 val_mae=14.1393 val_rmse=16.1773 lr=0.00015
+[EPOCH] model=A fold=holdout_F06 epoch=17/18 train_mae=2.3032 val_mae=12.6822 val_rmse=14.3212 lr=0.00015
+[EARLY_STOP] model=A fold=holdout_F06 epoch=17 best_epoch=12 best_val_mae=11.1787
+[DONE] model=A fold=holdout_F06 best_epoch=12 best_val_mae=11.1787 test_mae=18.6931 test_rmse=24.1526 test_r2=-0.0631
+[MODEL] Finished A
+[MODEL] Starting B
+[START] model=B fold=holdout_F01 test=F01 val=F02 train_groups=F03,F04,F05,F06
+[EPOCH] model=B fold=holdout_F01 epoch=1/18 train_mae=8.8730 val_mae=20.3771 val_rmse=22.8920 lr=0.0003
